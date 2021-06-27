@@ -7,22 +7,20 @@ description: |
   A data type for controlling possibly lazy &amp; asynchronous computations, useful for controlling side-effects, avoiding nondeterminism and callback-hell.
 ---
 
-## Introduction
+## イントロダクション
 
-Task is a data type for controlling possibly lazy &amp; asynchronous
-computations, useful for controlling side-effects, avoiding
-nondeterminism and callback-hell.
+タスクは、遅延する可能性のある、非同期計算を制御するためのデータ型です。副作用の制御や非決定論やコールバック地獄の回避に役立ちます。
 
-To get the imports out of the way:
+importを整理します:
 
 ```scala mdoc:silent
-// In order to evaluate tasks, we'll need a Scheduler
+// タスクを評価するためには、Schedulerが必要です
 import monix.execution.Scheduler.Implicits.global
 
-// A Future type that is also Cancelable
+// キャンセル可能なFuture型
 import monix.execution.CancelableFuture
 
-// Task is in monix.eval
+// Taskはmonix.eval内にあります
 import monix.eval.Task
 import scala.util.{Success, Failure}
 ```
@@ -35,14 +33,13 @@ implicit val global = TestScheduler()
 ```
 
 ```scala mdoc:silent:nest
-// Executing a sum, which (due to the semantics of apply)
-// will happen on another thread. Nothing happens on building
-// this instance though, this expression is pure, being
-// just a spec! Task by default has lazy behavior ;-)
+// sumを実行すると、(applyのセマンティクスにより)別のスレッドで発生します
+// しかし、このインスタンスの構築時には何も起こりません
+// この表現は純粋で、単なる仕様です。タスクはデフォルトでは遅延動作をします ;-)
 val task = Task { 1 + 1 }
 
-// Tasks get evaluated only on runToFuture!
-// Callback style:
+// タスクはrunToFutureでのみ評価されます
+// コールバックスタイル:
 val cancelable = task.runAsync { result =>
   result match {
     case Right(value) =>
@@ -53,48 +50,44 @@ val cancelable = task.runAsync { result =>
 }
 //=> 2
 
-// Or you can convert it into a Future
+// または、Futureに変換することもできます
 val future: CancelableFuture[Int] =
   task.runToFuture
 
-// Printing the result asynchronously
+// 結果を非同期にプリントします
 future.foreach(println)
 //=> 2
 ```
 
-### Design Summary
+### 設計の概要
 
-In summary the Monix `Task`:
+Monixの `Task` を要約します:
 
-- models lazy &amp; asynchronous evaluation
-- models a producer pushing only one value to one or multiple consumers
-- allows fine-grained control over the [execution model](../execution/scheduler.md#execution-model)
-- doesn’t trigger the execution, or any effects until `runToFuture`
-- doesn’t necessarily execute on another logical thread
-- allows for cancelling of a running computation
-- allows for controlling of side-effects, being just as
-  potent as Haskell's I/O ;-)
-- never blocks any threads in its implementation
-- does not expose any API calls that can block threads
+- 遅延 &amp; 非同期評価
+- 1つのプロデューサーが1つまたは複数のコンシューマーに1つの値だけをプッシュするモデル
+- [実行モデル](../execution/scheduler.md#execution-model) をきめ細かく制御することができる
+- `runToFuture`が呼ばれるまでは、実行やその効果は引き起こされません
+- 必ずしも別の論理スレッドで実行する必要はありません
+- 実行中の計算をキャンセルすることができます
+- Haskellの機能と同様に副作用を制御することができます(HaskellのI/Oと同じような効果があります)
+- 実装上、スレッドをブロックすることはありません
+- スレッドをブロックするようなAPIコールを公開していません
 
-A visual representation of where they sit in the design
-space:
+これらの仕様を表にまとめます:
 
-|                    |        Eager        |            Lazy            |
+|                    |        先行         |            遅延             |
 |:------------------:|:-------------------:|:--------------------------:|
-| **Synchronous**    |          A          |           () => A          |
-|                    |                     | [Coeval[A]](./coeval.md) |
-| **Asynchronous**   | (A => Unit) => Unit |    (A => Unit) => Unit     |
+| **同期**            |          A          |           () => A          |
+|                    |                     | [Coeval[A]](./coeval.md)   |
+| **非同期**          | (A => Unit) => Unit |    (A => Unit) => Unit     |
 |                    |      Future[A]      |          Task[A]           |
 
-### Comparison with Scala's Future
+### ScalaのFutureとの比較
 
-`Task` sounds similar with Scala's
-[Future](http://docs.scala-lang.org/overviews/core/futures.html), but
-has a different character and the two types as you'll see are actually
-complementary. A wise man once said:
+`Task`はScalaの [Future](http://docs.scala-lang.org/overviews/core/futures.html) と似ていますが違った性格を持っており、この2つのタイプは実際には補完関係にあることがわかります。  
+賢い人はかつてこう言いました。
 
-> "*A Future represents a value, detached from time*" &mdash; Viktor Klang
+> "*未来は時間から切り離された価値を表す*" &mdash; Viktor Klang
 
 That's certainly a poetic notion, making one think about what values
 are and how they incorporate time. But more importantly, while we
