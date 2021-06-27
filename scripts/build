@@ -56,7 +56,7 @@ unless ENV['CI_DEPLOY'] == "true"
   exit 0
 end
 
-repository = "github.com/monix/monix.io.git"
+repository = "github.com/ignission/monix.io.git"
 ghToken = ENV['GH_TOKEN']
 
 unless ghToken
@@ -78,10 +78,10 @@ begin
 
   Dir.chdir(destDir) do |path|
     exec("git add .")
-    exec('git config user.name "Alexandru Nedelcu"')
-    exec('git config user.email "noreply@alexn.org"')
+    exec('git config user.name "Shoma Nishitateno"')
+    exec('git config user.email "shoma416@gmail.com"')
     exec('git commit -m "docs: update gh-pages"')
-    exec("git push --force --quiet \"https://alexandru:#{ghToken}@#{repository}\" gh-pages:gh-pages")
+    exec("git push --force --quiet \"https://ignission:#{ghToken}@#{repository}\" gh-pages:gh-pages")
   end
 ensure
   exec("rm -rf \"#{destDir}\"")
