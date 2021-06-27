@@ -3,18 +3,18 @@ layout: page
 title: Fork or Follow @Monix
 ---
 
-Project repositories:
+プロジェクトのリポジトリ:
 
 - [Monix (Core)](https://github.com/monix/monix/)
 - [Website](https://github.com/monix/monix.io/)
 
-News &amp; updates:
+ニュース &amp; アップデート:
 
 - [Atom/RSS](/blog/atom.xml)
 - [Twitter (@Monix)](https://twitter.com/monix){:target=>"blank"}
 
-Other Profiles:
+その他:
 
 - [GitHub (@Monix)](https://github.com/monix)
 
-Enjoy!
+楽しんで！
