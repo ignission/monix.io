@@ -8,21 +8,21 @@ layout: default
   {% if page.with_last_modified_at %}
   <time class="post-date" itemprop="dateModified"
     datetime="{{ page.last_modified_at | date: "%Y-%m-%d" }}">
-    <b>Page updated at:</b> {{ page.last_modified_at | date_to_string }}
+    <b>ページの更新日:</b> {{ page.last_modified_at | date_to_string }}
   </time>
   {% endif -%}
 
   <nav role="navigation" id="type-info">
-    {% if page.type_api %}<a href="{{ page.path | api_base_url }}{{ page.type_api | replace: '.','/' }}.html">API Documentation</a>{% endif %}
-    {% if page.type_source %}<a href="{{ site.github.repo }}/blob/v{{ site.promoted.version3x }}/{{ page.type_source }}">Source Code</a>{% endif %}
-    {% if page.play_url %}<a href="{{ page.play_url }}" target="_blank">Try It in ScalaFiddle</a>{% endif %}
-    <a href="{{ site.github.docs }}/blob/master/{{ page.path | doc_edit_link }}">Edit Page</a>
-    {% if page.has_comments %}<a href="#comments">Comments</a>{% endif %}
+    {% if page.type_api %}<a href="{{ page.path | api_base_url }}{{ page.type_api | replace: '.','/' }}.html">APIドキュメント</a>{% endif %}
+    {% if page.type_source %}<a href="{{ site.github.repo }}/blob/v{{ site.promoted.version3x }}/{{ page.type_source }}">ソースコード</a>{% endif %}
+    {% if page.play_url %}<a href="{{ page.play_url }}" target="_blank">ScalaFiddleで試す</a>{% endif %}
+    <a href="{{ site.github.docs }}/blob/master/{{ page.path | doc_edit_link }}">ページを編集</a>
+    {% if page.has_comments %}<a href="#comments">コメント</a>{% endif %}
   </nav>
   
   <div id="version3x">
-    You are viewing the documentation for the latest Monix 3.x series.<br/>
-    Older versions:
+    最新のMonix 3.xシリーズのドキュメントが表示されています。<br/>
+    古いバージョン:
     {% for version in site.docs.deprecated_versions %}
       {% capture alt_link %}{{ page.path | current_doc_link: site.pages, version.path }}{% endcapture -%}      
       <a href="{% if alt_link != page.path %}{% link {{ alt_link }} %}{% else %}{% link docs/{{ version.path }}/index.md %}{% endif %}">{{ version.label }}</a>{% unless forloop.last == true %}, {% endunless -%}      
@@ -38,13 +38,13 @@ layout: default
   <div class="buttons">
     <a href="{% link {{ page.path | doc_contents_link }} %}">Contents</a> •
     <a href="{{ site.github.docs }}/blob/master/{{ page.path | doc_edit_link }}">
-      Edit Page</a> •
+      ページを編集</a> •
     {% if page.play_url %}<a href="{{ page.play_url }}" title="Powered by ScalaFiddle" target="_blank">
-      Try It</a> •{% endif %}
+      試す</a> •{% endif %}
     <a href="{{ site.github.chat }}">
-      Join Chat</a> •
+      チャットに参加</a> •
     <a href="{{ site.baseurl }}social.html">
-      Follow</a>
+      フォロー</a>
   </div>
 
   {% if page.has_comments %}{% include comments.html %}{% endif -%}
