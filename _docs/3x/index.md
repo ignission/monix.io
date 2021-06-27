@@ -94,16 +94,16 @@ sbt new monix/monix-jvm-app-template.g8
   
 ## ベストプラクティス
   
-- [Should Not Block Threads](./best-practices/blocking.md)
+- [スレッドをブロックしてはいけない](./best-practices/blocking.md)
 
 ## サンプル
 
 - [Client/Server Communications](https://github.com/monixio/monix-sample/):
-  a mixed [Play Framework](https://www.playframework.com/) /
-  [Scala.js](http://www.scala-js.org/) app
+  [Play Framework](https://www.playframework.com/) と
+  [Scala.js](http://www.scala-js.org/) で作るアプリケーション
 
 ## プレゼンテーション
 
 {% include presentations.html %}
 
-日々更新していきます！ よろしくお願いします！
+更新中です！ よろしくお願いします！

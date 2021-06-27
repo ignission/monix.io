@@ -4,18 +4,17 @@ title: "Best Practice: Should Not Block Threads"
 description: "Blocking threads is incredibly error prone. And if you must block, do so with Scala's BlockContext and with explicit timeouts."
 ---
 
-When you have a choice, you should never block. For example, don't do
-this:
+選択肢があるのであれば、絶対にスレッドをブロックしてはいけません。例えば、次のようなコードです:
 
 ```scala
 def fetchSomething: Future[String] = ???
 
-// later ...
+// いろいろ処理をしたあとで ...
 val result = Await.result(fetchSomething, Duration.Inf)
 result.toUpperCase
 ```
 
-Prefer keeping the context of that Future all the way, until the edges of your program:
+プログラムの最後まで、ずっとそのFutureの文脈を保つことが望ましいです。
 
 ```scala
 def fetchSomething: Future[String] = ???
@@ -23,59 +22,51 @@ def fetchSomething: Future[String] = ???
 fetchSomething.map(_.toUpperCase)
 ```
 
-**PRO-TIP:** for Scala's Future, checkout the
-[Scala-Async](https://github.com/scala/async) project to make this
-easier.
+**プロによるアドバイス:** [Scala-Async](https://github.com/scala/async) プロジェクトをチェックアウトすると、Scalaの `Future` をより理解しやすくなります。
 
-**REASON:** blocking threads is error prone because you have to know
-and control the configuration of the underlying thread-pool. For
-example even Scala's `ExecutionContext.Implicits.global` has an upper
-limit to the number of threads spawned, which means that you can end
-up in a *dead-lock*, because all of your threads can end up blocked,
-with no threads available in the pool to finish the required
-callbacks.
+**理由:** ブロッキング・スレッドを使用するとエラーが発生しやすくなります。
+これは基盤となるスレッドプールの設定を知り、制御する必要があるからです。
+例えばScala の `ExecutionContext.Implicits.global` には、生成されるスレッド数の上限があり、*デッドロック* 状態になってしまう可能性があります。
+なぜならすべてのスレッドがブロックされると、必要なコールバックを完了するためにスレッドプールで利用可能なスレッドがなくなるからです。
 
-## If blocking, specify explicit timeouts
+## もしブロッキングするなら、明示的にタイムアウトを指定してください
 
-If you have to block, specify explicit timeouts for failure and never
-use APIs that block on some result and that don't have explicit
-timeouts.
+ブロックしなければならない場合は、失敗したときのタイムアウトを明示的に指定してください。
+何らかの結果でブロックされるAPIや、明示的なタイムアウトがないAPIは絶対に使用しないでください。
 
-For example Scala's own `Await.result` is very well behaved ands
-that's good:
+例えば、Scala の `Await.result` は非常によくできていて、次のような利点があります。
+これは良い例です:
 
 ```scala
 Await.result(future, 3.seconds)
 ```
 
-But for example when using
-[Java's Future](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/Future.html),
-never do this:
+しかし、次の例は [JavaのFuture](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/Future.html) を使用しています。  
+このような使い方をしないでください:
 
 ```scala
 val future: java.util.concurrent.Future[T] = ???
 
-// BAD CODE, NEVER DO THIS !!!
+// 悪い例です。絶対に避けてください !!!
 future.get
 ```
 
-Instead always specify timeouts, because in case the underlying
-thread-pool is limited and there are no more threads left, at least
-some of them will get unblocked after the specified timespan:
+その代わり、常にタイムアウトを指定します。
+スレッドプールが限られていてもうスレッドが残っていない場合、少なくとも指定された時間が経過すると、いくつかのスレッドのブロックが解除されます。
 
 ```scala
 val future: java.util.concurrent.Future[T] = ???
 
-// GOOD
+// 良いですね
 future.get(TimeUnit.SECONDS, 3)
 ```
 
-## If blocking, use Scala's BlockContext
+## もしブロッキングするなら、ScalaのBlockContextを使用してください
 
-This includes all blocking I/O, including SQL queries. Real sample:
+次の例には、SQLクエリを含むすべてのブロッキングI/Oが含まれます。
 
 ```scala
-// BAD SAMPLE!
+// 悪い例です！
 Future {
   DB.withConnection { implicit connection =>
     val query = SQL("select * from bar")
@@ -84,12 +75,10 @@ Future {
 }
 ```
 
-Blocking calls are error-prone because one has to be aware of exactly
-what thread-pool gets affected and given the default configuration of
-the backend app, this can lead to non-deterministic dead-locks. It's a
-bug waiting to happen in production.
+ブロッキングコールは、どのスレッドプールが影響を受けるかを正確に認識しなければならないため、エラーが発生しやすくなります。
+バックエンドアプリのデフォルト設定では、非決定的なデッドロックが発生する可能性があります。これは本番でも起こりうるバグです。
 
-Here's a simplified example demonstrating the issue for didactic purposes:
+ここでは、この問題を説明するための簡単な例を紹介します:
 
 ```scala
 implicit val ec = ExecutionContext
@@ -102,39 +91,27 @@ def multiply(x: Int, y: Int) = Future {
   val b = addOne(y)
   val result = for (r1 <- a; r2 <- b) yield r1 * r2
 
-  // This can dead-lock due to the limited size 
-  // of our thread-pool!
+  // スレッドプールのサイズが限られているため、デッドロックが発生する可能性があります！
   Await.result(result, Duration.Inf)
 }
 ```
 
-This sample is simplified to make the effect deterministic, but all
-thread-pools configured with upper bounds will sooner or later be
-affected by this.
+このサンプルは効果を決定論的にするために単純化されていますが、すべての上限を設定したスレッドプールは、遅かれ早かれこの影響を受けます。
 
-Blocking calls have to be marked with a `blocking` call that signals
-to the `BlockContext` a blocking operation. It's a very neat mechanism
-in Scala that lets the `ExecutionContext` know that a blocking operation
-happens, such that the `ExecutionContext` can decide what to do about
-it, such as adding more threads to the thread-pool (which is what
-Scala's ForkJoin thread-pool does).
+ブロッキングコールは、`BlockContext` にブロッキング操作のシグナルを送る `blocking` コールでマークする必要があります。
+これはScalaの非常に優れたメカニズムで、ブロック操作が発生したことを`ExecutionContext`に知らせ、`ExecutionContext`がそれに対して何をすべきかを決めることができます。
+例えば，スレッドプールにさらにスレッドを追加するとか（これはScalaのForkJoinスレッドプールがそうです）です。
 
-**WARNING:** Scala's `ExecutionContext.Implicits.global` is backed by
-a cool `ForkJoinPool` implementation that has an absolute maximum
-number of threads limit. What this means is that, in spite of well
-behaved code, you can still hit that limit and you can still end up in
-a dead-lock. This is why blocking threads is error prone, as nothing
-saves you from knowing and controlling the thread-pools that you end
-up blocking.
+**警告:** Scalaの `ExecutionContext.Implicits.global` は、スレッド数に絶対的な制限を設けたクールな `ForkJoinPool` 実装に支えられています。
+これが意味するところは、よくできたコードにもかかわらず、その制限にぶつかってしまいデッドロックに陥る可能性があるということです。
+これが、スレッドをブロックすることがエラーになりやすい理由であり、自分がブロックしてしまうスレッドプールを知り、制御することができないからです。
 
-## If blocking, use a separate thread-pool for blocking I/O
+## ブロッキングするなら、ブロッキングI/O用に別のスレッドプールを使用してください
 
-If you're doing a lot of blocking I/O (e.g. a lot of calls to JDBC),
-it's better to create a second thread-pool / execution context and
-execute all blocking calls on that, leaving the application's
-thread-pool to deal with CPU-bound stuff.
+ブロッキングI/Oを多用している場合(JDBCの呼び出しが多い場合など)、 2つ目のスレッドプール/実行コンテキストを作成して、すべてのブロッキングコールをそのスレッドプールで実行したほうがいいでしょう。
+アプリケーションのスレッドプールにはCPU負荷のかかる処理を任せます。
 
-So you could initialize another I/O related thread-pool like so:
+そこで、I/O関連用の別のスレッドプールを以下のように初期化します:
 
 ```scala
 import java.util.concurrent.Executors
@@ -154,14 +131,11 @@ private val io = Executors.newCachedThreadPool(
   })
 ```
 
-Note that here I prefer to use an unbounded "cached thread-pool", so
-it doesn't have a limit. When doing blocking I/O the idea is that
-you've got to have enough threads that you can block. But if unbounded
-is too much, depending on use-case, you can later fine-tune it, the
-idea with this sample being that you get the ball rolling.
+ここでは、境界のない「キャッシュされたスレッドプール」を使用したいと思います。制限はありません。
+ブロッキングI/Oを行う場合、アイデアとしてはブロックできるだけのスレッドを持っていなければなりません。
+しかし、もしそれが多すぎる場合は用途に応じて後で微調整することができます。
 
-You could also use Monix's `Scheduler.io` of course, which is also
-backed by a "cached thread-pool":
+もちろん、Monix の `Scheduler.io` を使用することもできますが、これもまた「キャッシュされたスレッドプール」に支えられています:
 
 ```scala
 import monix.execution.Scheduler
@@ -170,7 +144,7 @@ private val io =
   Scheduler.io(name="engine-io")
 ```
 
-And then you could provide a helper, like:
+次のようにヘルパーメソッドを用意するのもいいでしょう:
 
 ```scala
 def executeBlockingIO[T](cb: => T): Future[T] = {
