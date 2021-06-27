@@ -12,7 +12,7 @@
   
   <title>Monix</title>
 
-  <link rel="canonical" href="https://monix.io/" />
+  <link rel="canonical" href="https://monix.io/ja/" />
 
   <!-- Twitter Cards -->
   
@@ -22,7 +22,7 @@
   <meta name="twitter:creator" content="@monix" />  
   <meta name="twitter:title" content="Monix" />
   <meta name="twitter:description" content="Asynchronous Programming for Scala &amp; Scala.js" />
-  <meta name="twitter:url" content="https://monix.io/">
+  <meta name="twitter:url" content="https://monix.io/ja/">
   <!-- Facebook Open-Graph -->
   <meta property="fb:app_id" content="2160100887367418" />
 
@@ -30,8 +30,8 @@
   <meta content="Monix" property="og:title">
   
   <meta content="Asynchronous Programming for Scala &amp; Scala.js" property="og:description">
-  <meta content="https://monix.io/" property="og:url">
-  <meta content="2021-05-14T14:48:18+00:00" property="article:modified_time">
+  <meta content="https://monix.io/ja/" property="og:url">
+  <meta content="2021-06-27T07:18:34+00:00" property="article:modified_time">
     
   <meta content="article" property="og:type">
   <meta property="og:image" content="https://monix.io/public/images/monix-logo.png" />
@@ -87,7 +87,7 @@
     </div>
 
     <nav class="sidebar-nav">
-      <a class="sidebar-nav-item active" href="/">About</a>
+      <a class="sidebar-nav-item" href="/">About</a>
       <a class="sidebar-nav-item" href="/blog/">Blog</a>
       <a class="sidebar-nav-item" href="/docs/current/">Documentation</a>
       <a class="sidebar-nav-item" href="/presentations/">Presentations</a>
@@ -109,15 +109,15 @@
         
       </h1>
 
-  <p>Asynchronous Programming for Scala and <a href="http://www.scala-js.org/">Scala.js</a>.</p>
+  <p>Scala と <a href="http://www.scala-js.org/">Scala.js</a> のための非同期プログラミング。</p>
 
 <iframe allowtransparency="true" scrolling="no" src="public/html/github-stars.html" style="width: 160px; height: 56px; border: medium none;" frameborder="0">
 </iframe>
     
-      <h2 id="overview">
+      <h2 id="概要">
         
         
-          Overview <a href="#overview" class="anchor">#</a>
+          概要 <a href="#概要" class="anchor">#</a>
         
         
       </h2>
@@ -145,7 +145,7 @@ as a primary project policy</li>
 
 <p>The project started as a proper implementation of <a href="http://reactivex.io/">ReactiveX</a>,
 with stronger functional programming influences and designed from the ground up
-for  back-pressure and made to cleanly interact with Scala’s standard library,
+for back-pressure and made to cleanly interact with Scala’s standard library,
 compatible out-of-the-box with the <a href="https://www.reactive-streams.org/">Reactive Streams</a>
 protocol. It then expanded to include abstractions for suspending side effects
 and for resource handling, being one of the parents and implementors of
@@ -196,17 +196,17 @@ and for resource handling, being one of the parents and implementors of
 <p>Monix is modular by design, so you can have an à la carte experience,
 the project being divided in multiple sub-projects.</p>
 
-<p>See <a href="/docs/current/intro/usage.html">Usage in SBT</a>, along with the <a href="/docs/current/intro/usage.html#sub-modules--dependencies-graph">sub-modules graph</a>, and don’t miss the <a href="/docs/current/intro/versioning-scheme.html">versioning scheme</a> for binary-backwards compatibility guarantees.</p>
+<p>See <a href="./docs/current/intro/usage.md">Usage in SBT</a>, along with the <a href="./docs/current/intro/usage.md#sub-modules--dependencies-graph">sub-modules graph</a>, and don’t miss the <a href="./docs/current/intro/versioning-scheme.md">versioning scheme</a> for binary-backwards compatibility guarantees.</p>
     
-      <h3 id="documentation">
+      <h3 id="ドキュメント">
         
         
-          Documentation <a href="#documentation" class="anchor">#</a>
+          ドキュメント <a href="#ドキュメント" class="anchor">#</a>
         
         
       </h3>
 
-<p>Documentation and tutorials:</p>
+<p>ドキュメントとチュートリアル:</p>
 
 <ul>
   <li><a href="/docs/current/">Current</a> (<a href="/docs/3x/">3.x series</a>)</li>
@@ -221,17 +221,17 @@ the project being divided in multiple sub-projects.</p>
   <li><a href="/api/1.2/">1.x</a></li>
 </ul>
 
-<p>Relevant links to dependencies:</p>
+<p>依存関係の関連リンク:</p>
 
 <ul>
   <li><a href="https://typelevel.org/cats/">Cats</a></li>
   <li><a href="https://typelevel.org/cats-effect/">Cats Effect</a></li>
 </ul>
     
-      <h2 id="latest-news">
+      <h2 id="最新ニュース">
         
         
-          Latest News <a href="#latest-news" class="anchor">#</a>
+          最新ニュース <a href="#最新ニュース" class="anchor">#</a>
         
         
       </h2>
@@ -275,15 +275,16 @@ the project being divided in multiple sub-projects.</p>
   
 </ol>
     
-      <h2 id="adopters">
+      <h2 id="利用者">
         
         
-          Adopters <a href="#adopters" class="anchor">#</a>
+          利用者 <a href="#利用者" class="anchor">#</a>
         
         
       </h2>
 
-<p>Here’s a (non-exhaustive) list of companies that use Monix in production. Don’t see yours? <a href="https://github.com/monix/monix/blob/series/4.x/README.md">You can add it in a PR!</a></p>
+<p>本番環境で Monix を使用している企業(すべて網羅しているわけではありません)のリストです。
+この中にありませんか？ <a href="https://github.com/monix/monix/blob/series/4.x/README.md">プルリクエストを送りましょう！</a></p>
 
 <ul>
   <li><a href="https://abacusfi.com">Abacus</a></li>
@@ -301,10 +302,10 @@ the project being divided in multiple sub-projects.</p>
   <li><a href="https://www.zendesk.com">Zendesk</a></li>
 </ul>
     
-      <h2 id="license">
+      <h2 id="ライセンス">
         
         
-          License <a href="#license" class="anchor">#</a>
+          ライセンス <a href="#ライセンス" class="anchor">#</a>
         
         
       </h2>
@@ -316,7 +317,7 @@ Some rights reserved.</p>
 
 
   <div class="buttons">
-    <a href="https://github.com/monix/monix.io/blob/master/index.md" target="_blank">
+    <a href="https://github.com/monix/monix.io/blob/master/ja/index.md" target="_blank">
       Edit Page</a> •
     <a href="https://gitter.im/monix/monix" target="_blank">
       Join Chat</a> •
