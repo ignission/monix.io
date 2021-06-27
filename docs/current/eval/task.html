@@ -30,15 +30,15 @@
   <meta content="Task &amp;mdash; Monix" property="og:title">
   <meta content="A data type for controlling possibly lazy &amp;amp; asynchronous computations, useful for controlling side-effects, avoiding nondeterminism and callback-hell." property="og:description">
   <meta content="https://monix.io/docs/current/eval/task.html" property="og:url">
-  <meta content="2021-05-14T14:48:18+00:00" property="article:modified_time">
+  <meta content="2021-06-27T15:16:25+00:00" property="article:modified_time">
     
   <meta content="article" property="og:type">
   <meta property="og:image" content="https://monix.io/public/images/monix-logo.png" />
   <meta property="og:image:secure_url" content="https://monix.io/public/images/monix-logo.png" />
   <!-- CSS -->
-  <link rel="stylesheet" href="/public/css/all.css?1624805340994656795">
+  <link rel="stylesheet" href="/public/css/all.css?1624807120649769977">
   <!--[if lt IE 9]>
-  <link rel="stylesheet" href="/public/css/forkme.ie.css?1624805340994656795">
+  <link rel="stylesheet" href="/public/css/forkme.ie.css?1624807120649769977">
   <![endif]-->
 
   <link rel="stylesheet" href="//fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
@@ -109,8 +109,8 @@
 
   
   <time class="post-date" itemprop="dateModified"
-    datetime="2021-05-14">
-    <b>ページの更新日:</b> 14 May 2021
+    datetime="2021-06-27">
+    <b>ページの更新日:</b> 27 Jun 2021
   </time>
   <nav role="navigation" id="type-info">
     <a href="/api/current/monix/eval/Task.html">APIドキュメント</a>
@@ -129,10 +129,10 @@
 
   <nav role="navigation" id="toc">
     <ul>
-  <li><a href="#introduction">Introduction</a>
+  <li><a href="#イントロダクション">イントロダクション</a>
     <ul>
-      <li><a href="#design-summary">Design Summary</a></li>
-      <li><a href="#comparison-with-scalas-future">Comparison with Scala’s Future</a></li>
+      <li><a href="#設計の概要">設計の概要</a></li>
+      <li><a href="#scalaのfutureとの比較">ScalaのFutureとの比較</a></li>
       <li><a href="#comparison-with-the-scalaz-task">Comparison with the Scalaz Task</a></li>
     </ul>
   </li>
@@ -195,39 +195,36 @@
 
   </nav>
     
-      <h2 id="introduction">
+      <h2 id="イントロダクション">
         
         
-          Introduction <a href="#introduction" class="anchor">#</a>
+          イントロダクション <a href="#イントロダクション" class="anchor">#</a>
         
         
       </h2>
 
-<p>Task is a data type for controlling possibly lazy &amp; asynchronous
-computations, useful for controlling side-effects, avoiding
-nondeterminism and callback-hell.</p>
+<p>タスクは、遅延する可能性のある、非同期計算を制御するためのデータ型です。副作用の制御や非決定論やコールバック地獄の回避に役立ちます。</p>
 
-<p>To get the imports out of the way:</p>
+<p>importを整理します:</p>
 
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// In order to evaluate tasks, we'll need a Scheduler</span>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// タスクを評価するためには、Schedulerが必要です</span>
 <span class="k">import</span> <span class="nn">monix.execution.Scheduler.Implicits.global</span>
 
-<span class="c1">// A Future type that is also Cancelable</span>
+<span class="c1">// キャンセル可能なFuture型</span>
 <span class="k">import</span> <span class="nn">monix.execution.CancelableFuture</span>
 
-<span class="c1">// Task is in monix.eval</span>
+<span class="c1">// Taskはmonix.eval内にあります</span>
 <span class="k">import</span> <span class="nn">monix.eval.Task</span>
 <span class="k">import</span> <span class="nn">scala.util.</span><span class="o">{</span><span class="nc">Success</span><span class="o">,</span> <span class="nc">Failure</span><span class="o">}</span>
 </code></pre></div></div>
 
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Executing a sum, which (due to the semantics of apply)</span>
-<span class="c1">// will happen on another thread. Nothing happens on building</span>
-<span class="c1">// this instance though, this expression is pure, being</span>
-<span class="c1">// just a spec! Task by default has lazy behavior ;-)</span>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// sumを実行すると、(applyのセマンティクスにより)別のスレッドで発生します</span>
+<span class="c1">// しかし、このインスタンスの構築時には何も起こりません</span>
+<span class="c1">// この表現は純粋で、単なる仕様です。タスクはデフォルトでは遅延動作をします ;-)</span>
 <span class="k">val</span> <span class="nv">task</span> <span class="k">=</span> <span class="nc">Task</span> <span class="o">{</span> <span class="mi">1</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">}</span>
 
-<span class="c1">// Tasks get evaluated only on runToFuture!</span>
-<span class="c1">// Callback style:</span>
+<span class="c1">// タスクはrunToFutureでのみ評価されます</span>
+<span class="c1">// コールバックスタイル:</span>
 <span class="k">val</span> <span class="nv">cancelable</span> <span class="k">=</span> <span class="nv">task</span><span class="o">.</span><span class="py">runAsync</span> <span class="o">{</span> <span class="n">result</span> <span class="k">=&gt;</span>
   <span class="n">result</span> <span class="k">match</span> <span class="o">{</span>
     <span class="k">case</span> <span class="nc">Right</span><span class="o">(</span><span class="n">value</span><span class="o">)</span> <span class="k">=&gt;</span>
@@ -238,52 +235,50 @@ nondeterminism and callback-hell.</p>
 <span class="o">}</span>
 <span class="c1">//=&gt; 2</span>
 
-<span class="c1">// Or you can convert it into a Future</span>
+<span class="c1">// または、Futureに変換することもできます</span>
 <span class="k">val</span> <span class="nv">future</span><span class="k">:</span> <span class="kt">CancelableFuture</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="k">=</span>
   <span class="nv">task</span><span class="o">.</span><span class="py">runToFuture</span>
 
-<span class="c1">// Printing the result asynchronously</span>
+<span class="c1">// 結果を非同期にプリントします</span>
 <span class="nv">future</span><span class="o">.</span><span class="py">foreach</span><span class="o">(</span><span class="n">println</span><span class="o">)</span>
 <span class="c1">//=&gt; 2</span>
 </code></pre></div></div>
     
-      <h3 id="design-summary">
+      <h3 id="設計の概要">
         
         
-          Design Summary <a href="#design-summary" class="anchor">#</a>
+          設計の概要 <a href="#設計の概要" class="anchor">#</a>
         
         
       </h3>
 
-<p>In summary the Monix <code class="language-plaintext highlighter-rouge">Task</code>:</p>
+<p>Monixの <code class="language-plaintext highlighter-rouge">Task</code> を要約します:</p>
 
 <ul>
-  <li>models lazy &amp; asynchronous evaluation</li>
-  <li>models a producer pushing only one value to one or multiple consumers</li>
-  <li>allows fine-grained control over the <a href="/docs/current/execution/scheduler.html#execution-model">execution model</a></li>
-  <li>doesn’t trigger the execution, or any effects until <code class="language-plaintext highlighter-rouge">runToFuture</code></li>
-  <li>doesn’t necessarily execute on another logical thread</li>
-  <li>allows for cancelling of a running computation</li>
-  <li>allows for controlling of side-effects, being just as
-potent as Haskell’s I/O ;-)</li>
-  <li>never blocks any threads in its implementation</li>
-  <li>does not expose any API calls that can block threads</li>
+  <li>遅延 &amp; 非同期評価</li>
+  <li>1つのプロデューサーが1つまたは複数のコンシューマーに1つの値だけをプッシュするモデル</li>
+  <li><a href="/docs/current/execution/scheduler.html#execution-model">実行モデル</a> をきめ細かく制御することができる</li>
+  <li><code class="language-plaintext highlighter-rouge">runToFuture</code>が呼ばれるまでは、実行やその効果は引き起こされません</li>
+  <li>必ずしも別の論理スレッドで実行する必要はありません</li>
+  <li>実行中の計算をキャンセルすることができます</li>
+  <li>Haskellの機能と同様に副作用を制御することができます(HaskellのI/Oと同じような効果があります)</li>
+  <li>実装上、スレッドをブロックすることはありません</li>
+  <li>スレッドをブロックするようなAPIコールを公開していません</li>
 </ul>
 
-<p>A visual representation of where they sit in the design
-space:</p>
+<p>これらの仕様を表にまとめます:</p>
 
 <table>
   <thead>
     <tr>
       <th style="text-align: center"> </th>
-      <th style="text-align: center">Eager</th>
-      <th style="text-align: center">Lazy</th>
+      <th style="text-align: center">先行</th>
+      <th style="text-align: center">遅延</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td style="text-align: center"><strong>Synchronous</strong></td>
+      <td style="text-align: center"><strong>同期</strong></td>
       <td style="text-align: center">A</td>
       <td style="text-align: center">() =&gt; A</td>
     </tr>
@@ -293,7 +288,7 @@ space:</p>
       <td style="text-align: center"><a href="/docs/current/eval/coeval.html">Coeval[A]</a></td>
     </tr>
     <tr>
-      <td style="text-align: center"><strong>Asynchronous</strong></td>
+      <td style="text-align: center"><strong>非同期</strong></td>
       <td style="text-align: center">(A =&gt; Unit) =&gt; Unit</td>
       <td style="text-align: center">(A =&gt; Unit) =&gt; Unit</td>
     </tr>
@@ -305,21 +300,19 @@ space:</p>
   </tbody>
 </table>
     
-      <h3 id="comparison-with-scalas-future">
+      <h3 id="scalaのfutureとの比較">
         
         
-          Comparison with Scala’s Future <a href="#comparison-with-scalas-future" class="anchor">#</a>
+          ScalaのFutureとの比較 <a href="#scalaのfutureとの比較" class="anchor">#</a>
         
         
       </h3>
 
-<p><code class="language-plaintext highlighter-rouge">Task</code> sounds similar with Scala’s
-<a href="http://docs.scala-lang.org/overviews/core/futures.html">Future</a>, but
-has a different character and the two types as you’ll see are actually
-complementary. A wise man once said:</p>
+<p><code class="language-plaintext highlighter-rouge">Task</code>はScalaの <a href="http://docs.scala-lang.org/overviews/core/futures.html">Future</a> と似ていますが違った性格を持っており、この2つのタイプは実際には補完関係にあることがわかります。<br />
+賢い人はかつてこう言いました。</p>
 
 <blockquote>
-  <p>“<em>A Future represents a value, detached from time</em>” — Viktor Klang</p>
+  <p>“<em>未来は時間から切り離された価値を表す</em>” — Viktor Klang</p>
 </blockquote>
 
 <p>That’s certainly a poetic notion, making one think about what values
