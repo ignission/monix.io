@@ -31,15 +31,15 @@
   
   <meta content="Asynchronous Programming for Scala &amp; Scala.js" property="og:description">
   <meta content="https://monix.io/docs/current/" property="og:url">
-  <meta content="2020-11-07T12:36:06+00:00" property="article:modified_time">
+  <meta content="2021-06-27T10:08:01+00:00" property="article:modified_time">
     
   <meta content="article" property="og:type">
   <meta property="og:image" content="https://monix.io/public/images/monix-logo.png" />
   <meta property="og:image:secure_url" content="https://monix.io/public/images/monix-logo.png" />
   <!-- CSS -->
-  <link rel="stylesheet" href="/public/css/all.css?1624783299205798823">
+  <link rel="stylesheet" href="/public/css/all.css?1624788651899726024">
   <!--[if lt IE 9]>
-  <link rel="stylesheet" href="/public/css/forkme.ie.css?1624783299205798823">
+  <link rel="stylesheet" href="/public/css/forkme.ie.css?1624788651899726024">
   <![endif]-->
 
   <link rel="stylesheet" href="//fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
@@ -110,8 +110,8 @@
 
   
   <time class="post-date" itemprop="dateModified"
-    datetime="2020-11-07">
-    <b>ページの更新日:</b> 07 Nov 2020
+    datetime="2021-06-27">
+    <b>ページの更新日:</b> 27 Jun 2021
   </time>
   <nav role="navigation" id="type-info">
     
@@ -130,9 +130,9 @@
 
   <nav role="navigation" id="toc">
     <ul>
-  <li><a href="#api-documentation">API Documentation</a></li>
-  <li><a href="#getting-started">Getting Started</a></li>
-  <li><a href="#sub-projects">Sub-projects</a>
+  <li><a href="#api-ドキュメント">API ドキュメント</a></li>
+  <li><a href="#始めよう">始めよう</a></li>
+  <li><a href="#サブプロジェクト">サブプロジェクト</a>
     <ul>
       <li><a href="#monix-execution">monix-execution</a></li>
       <li><a href="#monix-catnap">monix-catnap</a></li>
@@ -141,55 +141,55 @@
       <li><a href="#monix-tail">monix-tail</a></li>
     </ul>
   </li>
-  <li><a href="#tutorials">Tutorials</a></li>
-  <li><a href="#best-practices">Best Practices</a></li>
-  <li><a href="#samples">Samples</a></li>
-  <li><a href="#presentations">Presentations</a></li>
+  <li><a href="#チュートリアル">チュートリアル</a></li>
+  <li><a href="#ベストプラクティス">ベストプラクティス</a></li>
+  <li><a href="#サンプル">サンプル</a></li>
+  <li><a href="#プレゼンテーション">プレゼンテーション</a></li>
 </ul>
 
   </nav>
     
-      <h2 id="api-documentation">
+      <h2 id="api-ドキュメント">
         
         
-          API Documentation <a href="#api-documentation" class="anchor">#</a>
+          API ドキュメント <a href="#api-ドキュメント" class="anchor">#</a>
         
         
       </h2>
 
 <p><a href="/api/current/">ScalaDoc for Monix 3.x</a></p>
 
-<p>Related:</p>
+<p>関連:</p>
 
 <ul>
   <li><a href="https://typelevel.org/cats/api/">Cats ScalaDoc</a></li>
   <li><a href="https://typelevel.org/cats-effect/api/">Cats-Effect ScalaDoc</a></li>
 </ul>
     
-      <h2 id="getting-started">
+      <h2 id="始めよう">
         
         
-          Getting Started <a href="#getting-started" class="anchor">#</a>
+          始めよう <a href="#始めよう" class="anchor">#</a>
         
         
       </h2>
 
 <ul>
-  <li><a href="/docs/current/intro/usage.html">Usage with SBT</a></li>
-  <li><a href="/docs/current/intro/versioning-scheme.html">Versioning scheme</a></li>
+  <li><a href="/docs/current/intro/usage.html">SBTで使う</a></li>
+  <li><a href="/docs/current/intro/versioning-scheme.html">バージョニング</a></li>
   <li><a href="/docs/current/intro/hello-world.html">Hello World!</a></li>
-  <li><a href="/docs/current/intro/cats.html">Typelevel Cats Integration</a></li>
+  <li><a href="/docs/current/intro/cats.html">Typelevel Cats との統合</a></li>
 </ul>
 
-<p><a href="https://github.com/monix/monix-jvm-app-template.g8">Quick-start template</a>:</p>
+<p><a href="https://github.com/monix/monix-jvm-app-template.g8">クイックスタートのテンプレート</a>:</p>
 
 <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>sbt new monix/monix-jvm-app-template.g8
 </code></pre></div></div>
     
-      <h2 id="sub-projects">
+      <h2 id="サブプロジェクト">
         
         
-          Sub-projects <a href="#sub-projects" class="anchor">#</a>
+          サブプロジェクト <a href="#サブプロジェクト" class="anchor">#</a>
         
         
       </h2>
@@ -202,14 +202,12 @@
         
       </h3>
 
-<p>The <code class="language-plaintext highlighter-rouge">monix-execution</code> sub-project provides low level, side effectful
-utilities for dealing with concurrency, exposing the JVM’s primitives
-and building on top of the <code class="language-plaintext highlighter-rouge">scala.concurrent</code> package.</p>
+<p><code class="language-plaintext highlighter-rouge">monix-execution</code>サブプロジェクトでは、低レベルで副作用の少ない、並行性を扱うユーティリティを提供し、JVMのプリミティブを <code class="language-plaintext highlighter-rouge">scala.concurrent</code> パッケージ上で公開しています。</p>
 
 <p><img src="/public/images/logos/java.png" alt="Java's Duke" title="Java's Duke" class="doc-icon" /></p>
 
 <ul>
-  <li><a href="/api/current/monix/execution/index.html">API Documentation</a></li>
+  <li><a href="/api/current/monix/execution/index.html">APIドキュメント</a></li>
   <li><a href="/docs/current/execution/scheduler.html">Scheduler</a></li>
   <li><a href="/docs/current/execution/cancelable.html">Cancelable</a></li>
   <li><a href="/docs/current/execution/callback.html">Callback</a></li>
@@ -226,14 +224,12 @@ and building on top of the <code class="language-plaintext highlighter-rouge">sc
         
       </h3>
 
-<p>The <code class="language-plaintext highlighter-rouge">monix-catnap</code> sub-project is for generic, purely functional
-utilities for managing concurrency, building on top of the
-<a href="https://typelevel.org/cats-effect/">Cats-Effect</a> type classes:</p>
+<p><code class="language-plaintext highlighter-rouge">monix-catnap</code> サブプロジェクトは、並行性を管理するための汎用的で純粋に機能的なユーティリティで、<a href="https://typelevel.org/cats-effect/">Cats-Effect</a> type classes の上に構築されています。</p>
 
 <p><img src="/public/images/logos/cats.png" alt="Cats" title="Cats" class="doc-icon" /></p>
 
 <ul>
-  <li><a href="/api/current/monix/catnap/index.html">API Documentation</a></li>
+  <li><a href="/api/current/monix/catnap/index.html">APIドキュメント</a></li>
   <li><a href="/docs/current/catnap/circuit-breaker.html">Circuit Breaker</a></li>
   <li><a href="/docs/current/catnap/mvar.html">MVar</a></li>
 </ul>
@@ -246,11 +242,10 @@ utilities for managing concurrency, building on top of the
         
       </h3>
 
-<p>The <code class="language-plaintext highlighter-rouge">monix-eval</code> sub-project exposes the <code class="language-plaintext highlighter-rouge">Task</code> and <code class="language-plaintext highlighter-rouge">Coeval</code> data
-types, for dealing with purely functional effects in a principled way:</p>
+<p><code class="language-plaintext highlighter-rouge">monix-eval</code> サブプロジェクトでは、純粋に関数的な効果を原理的に扱うために、<code class="language-plaintext highlighter-rouge">Task</code>と<code class="language-plaintext highlighter-rouge">Coeval</code> データ型を公開しています。</p>
 
 <ul>
-  <li><a href="/api/current/monix/eval/index.html">API Documentation</a></li>
+  <li><a href="/api/current/monix/eval/index.html">APIドキュメント</a></li>
   <li><a href="/docs/current/eval/task.html">Task</a></li>
   <li><a href="/docs/current/eval/coeval.html">Coeval</a></li>
   <li><a href="/docs/current/eval/stacktraces.html">Better Stack Traces</a></li>
@@ -264,14 +259,12 @@ types, for dealing with purely functional effects in a principled way:</p>
         
       </h3>
 
-<p>The <code class="language-plaintext highlighter-rouge">monix-reactive</code> sub-project exposes the <code class="language-plaintext highlighter-rouge">Observable</code> data type,
-along with adjacent utilities, a high performance streaming abstraction
-that’s an idiomatic implementation of ReactiveX for Scala:</p>
+<p><code class="language-plaintext highlighter-rouge">monix-reactive</code>サブプロジェクトでは、<code class="language-plaintext highlighter-rouge">Observable</code>データ型とそれに付随するユーティリティ、高性能なストリーミングの抽象化を公開しています。これは、ScalaのReactiveXのイディオム的な実装です。</p>
 
 <p><img src="/public/images/logos/reactivex.png" alt="ReactiveX" title="ReactiveX" class="doc-icon" /></p>
 
 <ul>
-  <li><a href="/api/current/monix/reactive/index.html">API Documentation</a></li>
+  <li><a href="/api/current/monix/reactive/index.html">APIドキュメント</a></li>
   <li><a href="/docs/current/reactive/observable.html">Observable</a></li>
   <li><a href="/docs/current/reactive/observable-comparisons.html">Comparisons with Other Solutions</a></li>
   <li><a href="/docs/current/reactive/observers.html">Observers and Subscribers</a></li>
@@ -289,17 +282,16 @@ that’s an idiomatic implementation of ReactiveX for Scala:</p>
 
 <p><img src="/public/images/logos/many-cats.png" alt="Cats friendly" title="Cats friendly" class="doc-icon2x" /></p>
 
-<p>The <code class="language-plaintext highlighter-rouge">monix-tail</code> sub-projects exposes <code class="language-plaintext highlighter-rouge">Iterant</code>, a generic, purely
-functional, principled, pull-based streaming data type:</p>
+<p><code class="language-plaintext highlighter-rouge">monix-tail</code> サブプロジェクトでは、汎用的で純粋に機能的、原理的でプルベースのストリーミングデータタイプである<code class="language-plaintext highlighter-rouge">Iterant</code>を公開しています。</p>
 
 <ul>
-  <li><a href="/api/current/monix/tail/index.html">API Documentation</a></li>
+  <li><a href="/api/current/monix/tail/index.html">APIドキュメント</a></li>
 </ul>
     
-      <h2 id="tutorials">
+      <h2 id="チュートリアル">
         
         
-          Tutorials <a href="#tutorials" class="anchor">#</a>
+          チュートリアル <a href="#チュートリアル" class="anchor">#</a>
         
         
       </h2>
@@ -316,10 +308,10 @@ functional, principled, pull-based streaming data type:</p>
   </li>
 </ul>
     
-      <h2 id="best-practices">
+      <h2 id="ベストプラクティス">
         
         
-          Best Practices <a href="#best-practices" class="anchor">#</a>
+          ベストプラクティス <a href="#ベストプラクティス" class="anchor">#</a>
         
         
       </h2>
@@ -328,10 +320,10 @@ functional, principled, pull-based streaming data type:</p>
   <li><a href="/docs/current/best-practices/blocking.html">Should Not Block Threads</a></li>
 </ul>
     
-      <h2 id="samples">
+      <h2 id="サンプル">
         
         
-          Samples <a href="#samples" class="anchor">#</a>
+          サンプル <a href="#サンプル" class="anchor">#</a>
         
         
       </h2>
@@ -342,10 +334,10 @@ a mixed <a href="https://www.playframework.com/">Play Framework</a> /
 <a href="http://www.scala-js.org/">Scala.js</a> app</li>
 </ul>
     
-      <h2 id="presentations">
+      <h2 id="プレゼンテーション">
         
         
-          Presentations <a href="#presentations" class="anchor">#</a>
+          プレゼンテーション <a href="#プレゼンテーション" class="anchor">#</a>
         
         
       </h2>
@@ -360,7 +352,7 @@ a mixed <a href="https://www.playframework.com/">Play Framework</a> /
   <a href="/presentations/">See all presentations!</a>
 </p>
 
-<p>Work in progress! Please help!</p>
+<p>日々更新していきます！ よろしくお願いします！</p>
 
 
   <div class="buttons">
