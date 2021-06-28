@@ -89,44 +89,26 @@ Monixの `Task` を要約します:
 
 > "*未来は時間から切り離された価値を表す*" &mdash; Viktor Klang
 
-That's certainly a poetic notion, making one think about what values
-are and how they incorporate time. But more importantly, while we
-cannot say that a `Future` is a
-[value](https://en.wikipedia.org/wiki/Value_(computer_science)),
-we can certainly say that it's a *value-wannabe*, meaning that when
-users receive a `Future` reference, they know that whatever process
-that's going to evaluate it has probably already started and it might
-have even finished already. This makes the behavior of Scala's
-`Future` to be about *eager evaluation* and certainly its design helps
-with that, if you think about how it takes that implicit execution
-context whenever you call its operators, like `map` and `flatMap`.
+価値とは何か、時間とは何かを考えさせられる詩的な発想ですね。
+しかし、より重要なことは、`Future`が [値](https://en.wikipedia.org/wiki/Value_(computer_science)) であるとは言えないものの、*値になりたがっている* とは確実に言えるということです。
+つまり、`Future`の参照を受け取ったとき、それを評価しようとしているどんなプロセスも、おそらくすでに始まっていて、またすでに終了しているかもしれません。
+これにより、Scalaの`Future`の動作は *先行評価* となり、`map`や`flatMap`のような演算子を呼ぶときに、どのように暗黙の実行コンテキストを取るかを考えれば、確かにその設計は助けになります。
 
-But `Task` is different. `Task` is about lazy evaluation. Well, not
-always lazy, in fact `Task` allows for fine-tuning the execution
-model, as you'll see, but that's the primary distinction between
-them. If `Future` is like a value, then `Task` is like a function. And
-in fact `Task` can function as a "factory" of `Future` instances.
+しかし、`Task`は違います。Taskは`遅延評価`です。実際、`Task`では実行モデルを微調整することができますが、これが両者の主な違いです。
+`Future`が値のようなものなら、`Task`は関数のようなものです。そして実際に、`Task`は`Future`インスタンスの「ファクトリー」として機能します。
 
-Another distinction is that `Future` is "*memoized*" by default,
-meaning that its result is going to be shared between multiple
-consumers if needed. But the evaluation of a `Task` is not memoized by
-default. No, you have to want memoization to happen, you have to
-specify it explicitly, as you'll see.
+もうひとつの特徴は、`Future`はデフォルトで「*メモ化*される」ということです。
+つまり、必要に応じて複数のコンシューマー間で共有されます。
+しかし、`Task`の評価は、デフォルトではメモ化されません。メモ化を実現するためには、明示的に指定しなければなりません。
 
-In terms of efficiency, `Future` having eager behavior, happens to be
-less efficient because whatever operation you're doing on it, the
-implementation will end up sending `Runnable` instances in the
-thread-pool and because the result is always memoized on each step,
-invoking that machinery (e.g. going into compare-and-set loops)
-whatever you're doing. On the other hand `Task` can do execution in
-synchronous batches.
+先行評価の動作を持つ`Future`は、効率面で劣ります。
+というのも、どのような操作を行っても実装は最終的にスレッドプールに`Runnable`インスタンスを送ることになり、結果が各ステップで常にメモ化されるからです。
+一方、`Task`は同期的なバッチで実行することができます。
 
-### Comparison with the Scalaz Task
+### Scalazのタスクとの比較
 
-It's no secret that the Monix Task was inspired by the
-[Scalaz](https://github.com/scalaz/scalaz) Task, an otherwise solid
-implementation. The whole Monix library stands on the shoulders of
-giants. But where the Monix Task implementation disagrees:
+MonixのTaskが、[Scalaz](https://github.com/scalaz/scalaz) のTaskにインスパイアされたことは周知の事実です。Monixライブラリ全体が巨人の肩の上に立っています。  
+Monix Taskの実装が異なる点は:
 
 1. The Scalaz Task is leaking implementation details. This is because
    the Scalaz Task is first and foremost about *trampolined*
