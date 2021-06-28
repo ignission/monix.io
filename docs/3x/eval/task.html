@@ -30,15 +30,15 @@
   <meta content="Task &amp;mdash; Monix" property="og:title">
   <meta content="A data type for controlling possibly lazy &amp;amp; asynchronous computations, useful for controlling side-effects, avoiding nondeterminism and callback-hell." property="og:description">
   <meta content="https://monix.io/docs/3x/eval/task.html" property="og:url">
-  <meta content="2021-06-27T15:16:25+00:00" property="article:modified_time">
+  <meta content="2021-06-28T15:34:10+00:00" property="article:modified_time">
     
   <meta content="article" property="og:type">
   <meta property="og:image" content="https://monix.io/public/images/monix-logo.png" />
   <meta property="og:image:secure_url" content="https://monix.io/public/images/monix-logo.png" />
   <!-- CSS -->
-  <link rel="stylesheet" href="/public/css/all.css?1624807120649769977">
+  <link rel="stylesheet" href="/public/css/all.css?1624894638460730546">
   <!--[if lt IE 9]>
-  <link rel="stylesheet" href="/public/css/forkme.ie.css?1624807120649769977">
+  <link rel="stylesheet" href="/public/css/forkme.ie.css?1624894638460730546">
   <![endif]-->
 
   <link rel="stylesheet" href="//fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
@@ -109,8 +109,8 @@
 
   
   <time class="post-date" itemprop="dateModified"
-    datetime="2021-06-27">
-    <b>ページの更新日:</b> 27 Jun 2021
+    datetime="2021-06-28">
+    <b>ページの更新日:</b> 28 Jun 2021
   </time>
   <nav role="navigation" id="type-info">
     <a href="/api/3.4/monix/eval/Task.html">APIドキュメント</a>
@@ -133,7 +133,7 @@
     <ul>
       <li><a href="#設計の概要">設計の概要</a></li>
       <li><a href="#scalaのfutureとの比較">ScalaのFutureとの比較</a></li>
-      <li><a href="#comparison-with-the-scalaz-task">Comparison with the Scalaz Task</a></li>
+      <li><a href="#scalazのタスクとの比較">Scalazのタスクとの比較</a></li>
     </ul>
   </li>
   <li><a href="#execution-runtofuture--foreach">Execution (runToFuture &amp; foreach)</a>
@@ -315,50 +315,32 @@
   <p>“<em>未来は時間から切り離された価値を表す</em>” — Viktor Klang</p>
 </blockquote>
 
-<p>That’s certainly a poetic notion, making one think about what values
-are and how they incorporate time. But more importantly, while we
-cannot say that a <code class="language-plaintext highlighter-rouge">Future</code> is a
-<a href="https://en.wikipedia.org/wiki/Value_(computer_science)">value</a>,
-we can certainly say that it’s a <em>value-wannabe</em>, meaning that when
-users receive a <code class="language-plaintext highlighter-rouge">Future</code> reference, they know that whatever process
-that’s going to evaluate it has probably already started and it might
-have even finished already. This makes the behavior of Scala’s
-<code class="language-plaintext highlighter-rouge">Future</code> to be about <em>eager evaluation</em> and certainly its design helps
-with that, if you think about how it takes that implicit execution
-context whenever you call its operators, like <code class="language-plaintext highlighter-rouge">map</code> and <code class="language-plaintext highlighter-rouge">flatMap</code>.</p>
+<p>価値とは何か、時間とは何かを考えさせられる詩的な発想ですね。
+しかし、より重要なことは、<code class="language-plaintext highlighter-rouge">Future</code>が <a href="https://en.wikipedia.org/wiki/Value_(computer_science)">値</a> であるとは言えないものの、<em>値になりたがっている</em> とは確実に言えるということです。
+つまり、<code class="language-plaintext highlighter-rouge">Future</code>の参照を受け取ったとき、それを評価しようとしているどんなプロセスも、おそらくすでに始まっていて、またすでに終了しているかもしれません。
+これにより、Scalaの<code class="language-plaintext highlighter-rouge">Future</code>の動作は <em>先行評価</em> となり、<code class="language-plaintext highlighter-rouge">map</code>や<code class="language-plaintext highlighter-rouge">flatMap</code>のような演算子を呼ぶときに、どのように暗黙の実行コンテキストを取るかを考えれば、確かにその設計は助けになります。</p>
 
-<p>But <code class="language-plaintext highlighter-rouge">Task</code> is different. <code class="language-plaintext highlighter-rouge">Task</code> is about lazy evaluation. Well, not
-always lazy, in fact <code class="language-plaintext highlighter-rouge">Task</code> allows for fine-tuning the execution
-model, as you’ll see, but that’s the primary distinction between
-them. If <code class="language-plaintext highlighter-rouge">Future</code> is like a value, then <code class="language-plaintext highlighter-rouge">Task</code> is like a function. And
-in fact <code class="language-plaintext highlighter-rouge">Task</code> can function as a “factory” of <code class="language-plaintext highlighter-rouge">Future</code> instances.</p>
+<p>しかし、<code class="language-plaintext highlighter-rouge">Task</code>は違います。Taskは<code class="language-plaintext highlighter-rouge">遅延評価</code>です。実際、<code class="language-plaintext highlighter-rouge">Task</code>では実行モデルを微調整することができますが、これが両者の主な違いです。
+<code class="language-plaintext highlighter-rouge">Future</code>が値のようなものなら、<code class="language-plaintext highlighter-rouge">Task</code>は関数のようなものです。そして実際に、<code class="language-plaintext highlighter-rouge">Task</code>は<code class="language-plaintext highlighter-rouge">Future</code>インスタンスの「ファクトリー」として機能します。</p>
 
-<p>Another distinction is that <code class="language-plaintext highlighter-rouge">Future</code> is “<em>memoized</em>” by default,
-meaning that its result is going to be shared between multiple
-consumers if needed. But the evaluation of a <code class="language-plaintext highlighter-rouge">Task</code> is not memoized by
-default. No, you have to want memoization to happen, you have to
-specify it explicitly, as you’ll see.</p>
+<p>もうひとつの特徴は、<code class="language-plaintext highlighter-rouge">Future</code>はデフォルトで「<em>メモ化</em>される」ということです。
+つまり、必要に応じて複数のコンシューマー間で共有されます。
+しかし、<code class="language-plaintext highlighter-rouge">Task</code>の評価は、デフォルトではメモ化されません。メモ化を実現するためには、明示的に指定しなければなりません。</p>
 
-<p>In terms of efficiency, <code class="language-plaintext highlighter-rouge">Future</code> having eager behavior, happens to be
-less efficient because whatever operation you’re doing on it, the
-implementation will end up sending <code class="language-plaintext highlighter-rouge">Runnable</code> instances in the
-thread-pool and because the result is always memoized on each step,
-invoking that machinery (e.g. going into compare-and-set loops)
-whatever you’re doing. On the other hand <code class="language-plaintext highlighter-rouge">Task</code> can do execution in
-synchronous batches.</p>
+<p>先行評価の動作を持つ<code class="language-plaintext highlighter-rouge">Future</code>は、効率面で劣ります。
+というのも、どのような操作を行っても実装は最終的にスレッドプールに<code class="language-plaintext highlighter-rouge">Runnable</code>インスタンスを送ることになり、結果が各ステップで常にメモ化されるからです。
+一方、<code class="language-plaintext highlighter-rouge">Task</code>は同期的なバッチで実行することができます。</p>
     
-      <h3 id="comparison-with-the-scalaz-task">
+      <h3 id="scalazのタスクとの比較">
         
         
-          Comparison with the Scalaz Task <a href="#comparison-with-the-scalaz-task" class="anchor">#</a>
+          Scalazのタスクとの比較 <a href="#scalazのタスクとの比較" class="anchor">#</a>
         
         
       </h3>
 
-<p>It’s no secret that the Monix Task was inspired by the
-<a href="https://github.com/scalaz/scalaz">Scalaz</a> Task, an otherwise solid
-implementation. The whole Monix library stands on the shoulders of
-giants. But where the Monix Task implementation disagrees:</p>
+<p>MonixのTaskが、<a href="https://github.com/scalaz/scalaz">Scalaz</a> のTaskにインスパイアされたことは周知の事実です。Monixライブラリ全体が巨人の肩の上に立っています。<br />
+Monix Taskの実装が異なる点は:</p>
 
 <ol>
   <li>The Scalaz Task is leaking implementation details. This is because
