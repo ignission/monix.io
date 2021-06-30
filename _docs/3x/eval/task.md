@@ -110,52 +110,32 @@ Monixの `Task` を要約します:
 MonixのTaskが、[Scalaz](https://github.com/scalaz/scalaz) のTaskにインスパイアされたことは周知の事実です。Monixライブラリ全体が巨人の肩の上に立っています。  
 Monix Taskの実装が異なる点は:
 
-1. The Scalaz Task is leaking implementation details. This is because
-   the Scalaz Task is first and foremost about *trampolined*
-   execution, but asynchronous execution is about jumping over
-   asynchronous and thus trampoline boundaries. So the API is limited
-   by what the trampoline can do and for example in order to not block
-   the current thread in a big loop, you have to *manually insert*
-   async boundaries yourself by means of `Task.executeAsync`. The Monix Task
-   on the other hand manages to do that automatically by default,
-   which is very useful when running on top of
-   [Javascript](http://www.scala-js.org/), where
-   [cooperative multitasking](https://en.wikipedia.org/wiki/Cooperative_multitasking)
-   is not only nice to have, but required.
-2. The Scalaz Task has a dual synchronous / asynchronous
-   personality. That is fine for optimization purposes as far as the
-   producer is concerned (i.e. why fork a thread when you don't have
-   to), but from the consumer's point of view having a `def run: A`
-   means that the API cannot be fully supported on top of Javascript
-   and on top of the JVM it means that the `Task` ends up faking
-   synchronous evaluation and blocking threads. And
-   [blocking threads is very unsafe](../best-practices/blocking.md).
-3. The Scalaz Task cannot cancel running computations. This is
-   important for nondeterministic operations. For example when you
-   create a race condition with a `race`, you may want to
-   cancel the slower task that didn't finish in time, because
-   unfortunately, if we don't release resources soon enough, we can
-   end up with serious leakage that can crash our process.
-4. The Scalaz Task piggybacks on top of Java's standard library for
-   dealing with asynchronous execution. This is bad for portability
-   reasons, as this API is not supported on top of
-   [Scala.js](http://www.scala-js.org/).
+1. ScalazのTaskは実装の詳細を漏らしています。
+   というのも、ScalazのTaskはまず*トランポリン*実行を目的としていますが、非同期実行は非同期のトランポリン境界を飛び越えることを目的としているからです。
+   例えば、大きなループで現在のスレッドをブロックしないようにするには、`Task.executeAsync`を使って非同期の境界を手動で挿入しなければなりません。
+   一方、MonixのTaskは、デフォルトで自動的にそれを行うようになっています。
+   これは、[Javascript](http://www.scala-js.org/) の上で実行するときに非常に便利です。
+   [協調的マルチタスク](https://en.wikipedia.org/wiki/Cooperative_multitasking) はあったほうがいいだけでなく、必要なのです。
+2. ScalazのTaskは同期/非同期の2面を持っています。これは生産者にとっては最適化のために良いことです(例えば、必要がないのになぜスレッドをフォークするのか)。
+   しかし、コンシューマの視点から見ると、`def run: A`は、JavascriptやJVM上でAPIを完全にサポートできないことを意味します。
+   つまり、Scalazの`Task` は結局、同期評価やスレッドのブロックを偽装することになるのです。
+   そして、[スレッドをブロックすることは非常に安全ではありません](../best-practices/blocking.md) 
+3. ScalazのTaskは、実行中の計算をキャンセルすることはできません。これは非決定論的な操作では重要です。
+   例えば、`race`で競合状態を作ったときに、時間内に終わらなかった遅いタスクをキャンセルしたい場合があります。
+   というのもリソースをすぐに解放しないと、残念ながら深刻なリークが発生してプロセスがクラッシュしてしまうことがあるからです。
+4. Scalazタスクは、非同期実行を扱うJavaの標準ライブラリを利用しています。
+   これはポータビリティの観点からは好ましくありません。このAPIは[Scala.js](http://www.scala-js.org/) の上ではサポートされていないからです。
+   
+## 実行 (runToFuture & foreach)
 
-## Execution (runToFuture & foreach)
+Taskインスタンスは、`runToFuture`によって実行されるまで何もしません。また、複数のオーバーロードがあります。
 
-`Task` instances won't do anything until they are executed by means
-of `runToFuture`. And there are multiple overloads of it.
+`Task.runToFuture`では`ExecutionContext`を継承した[Scheduler](../execution/scheduler.md) を暗黙のパラメータとして求められます。
+しかし、ここから`Task`とScala標準の`Future`との設計の違いが出てきます。
+遅延という性格を持つ`Task`は、`runToFuture`を使った実行時にのみこの`Scheduler`を必要とし、Scalaの`Future`のようにすべての操作(`map`や`flatMap`など)で必要とされるわけではありません。
 
-`Task.runToFuture` also wants an implicit
-[Scheduler](../execution/scheduler.md) in scope, that can supplant
-your `ExecutionContext` (since it inherits from it). But this is where
-the design of `Task` diverges from Scala's own `Future`. The `Task`
-being lazy, it only wants this `Scheduler` on execution with
-`runToFuture`, instead of wanting it on every operation (like `map` or
-`flatMap`), the way that Scala's `Future` does.
-
-So first things first, we need a `Scheduler` in scope. The `global` is
-piggybacking on Scala's own `global`, so now you can do this:
+ではまず、スコープ内に`Scheduler`を用意しましょう。
+この`global`は、Scala独自の`global`に乗っかっているので、次のようなことができます:
 
 ```scala mdoc:silent:nest
 import monix.execution.Scheduler.Implicits.global
@@ -165,17 +145,10 @@ import monix.execution.schedulers.TestScheduler
 implicit val global = TestScheduler()
 ```
 
-**NOTE:** The [Scheduler](../execution/scheduler.md) can inject a
-configurable
-[execution model](../execution/scheduler.md#execution-model) which
-determines how asynchronous boundaries get forced (or not). Read up on
-it.
+**注:** [Scheduler](../execution/scheduler.md) は、非同期の境界がどのように強制されるか(あるいはされないか)を決定する設定可能な[実行モデル](../execution/scheduler.md#execution-model) を注入することができます。
 
-The most straightforward and idiomatic way would be to execute
-tasks and get a
-[CancelableFuture]({{ page.path | api_base_url }}monix/execution/CancelableFuture.html)
-in return, which is a standard `Future` paired with a
-[Cancelable](../execution/cancelable.md):
+最もわかりやすく慣用的な方法は、タスクを実行して[CancelableFuture]({{ page.path | api_base_url }}monix/execution/CancelableFuture.html) を返すことです。
+これは、標準的な`Future`と[Cancelable](../execution/cancelable.md) を組み合わせたものです。
 
 ```scala mdoc:silent:nest
 import monix.eval.Task
@@ -187,13 +160,12 @@ val task = Task(1 + 1).delayExecution(1.second)
 val result: CancelableFuture[Int] =
   task.runToFuture
 
-// If we change our mind
+// 気が変わってキャンセルしたくなったら
 result.cancel()
 ```
 
-Returning a `Future` might be too heavy for your needs, you might want
-to provide a simple callback. We can also `runAsync` with a `Either[Throwable, A] =>
-Unit` callback, similar to the standard `Future.onComplete`.
+`Future`を返すのが重すぎるのであれば、シンプルなコールバックを用意したほうがいいかもしれません。
+標準の`Future.onComplete`と同様に、`Either[Throwable, A] => Unit`コールバックを使って`runAsync`することもできます。
 
 ```scala mdoc:silent:nest
 val task = Task(1 + 1).delayExecution(1.second)
@@ -207,15 +179,14 @@ val cancelable = task.runAsync { result =>
   }
 }
 
-// If we change our mind...
+// 気が変わってキャンセルしたくなったら...
 cancelable.cancel()
 ```
 
-We can also `runAsync` with a [Callback](../execution/callback.md) instance.
-This is like a Java-ish API, useful in case, for any reason whatsoever,
-you want to keep state. `Callback` is also used internally, because it
-allows us to guard against contract violations and to avoid the boxing
-specific to `Try[T]` or `Either[E, A]`. Sample:
+また、[Callback](../execution/callback.md) インスタンスを使って`runAsync`することもできます。
+これはJava的なAPIのようなもので、状態を保持したい場合に便利です。
+`Callback`は内部的にも使用されています。なぜなら契約違反を防ぎ、`Try[T]`や`Either[E, A]`に特有のボクシングを回避することができるからです。  
+例:
 
 ```scala mdoc:silent:nest
 import monix.execution.Callback
@@ -230,12 +201,11 @@ val cancelable = task.runAsync(
       System.err.println(s"ERROR: ${ex.getMessage}")
   })
 
-// If we change our mind...
+// 気が変わってキャンセルしたくなったら...
 cancelable.cancel()
 ```
 
-But if you just want to trigger some side-effects quickly, you can
-just use `foreach` directly:
+しかし、いくつかの副作用を素早く発生させたい場合は、`foreach`を直接使うことができます:
 
 ```scala mdoc:silent:nest
 val task = Task { println("Effect!"); "Result" }
@@ -244,38 +214,27 @@ task.foreach { result => println(result) }
 //=> Effect!
 //=> Result
 
-// Or we can use for-comprehensions
+// もしくはfor式も同様です
 for (result <- task) {
   println(result)
 }
 ```
 
-NOTE: `foreach` on `Task` does not block, but returns a
-`CancelableFuture[Unit]` that can be used to block on the execution,
-or for cancellation.
+注: `Task`の`foreach`はブロックせずに`CancelableFuture[Unit]`を返します。これは任意に実行をブロックしたり、キャンセルするために使用できます。 
 
-### Blocking for a Result
+### 結果をブロッキングする
 
-Monix is [against blocking](../best-practices/blocking.md) as a
-matter of philosophy, therefore `Task` doesn't have any API calls that
-blocks threads, none!
+[Monixはその哲学としてブロッキングに反対](../best-practices/blocking.md) しており、したがって`Task`にはスレッドをブロックするAPIコールは一切ありません！
 
-However, on top of the JVM sometimes we have to block. And if we have
-to block, Monix doesn't try to outsmart Scala's standard library,
-because the standard `Await.result` and `Await.ready` have two healthy
-design choices:
+しかし、JVMの上では時にはブロックしなければならないこともあります。
+なぜなら、標準の`Await.result`と`Await.ready`には、2つの健全な設計上の選択があるからです。
 
-1. These calls use Scala's `BlockContext` in their implementation,
-   signaling to the underlying thread-pool that a blocking operation
-   is being executed, allowing the thread-pool to act on it. For
-   example it might decide to add more threads in the pool, like
-   Scala's `ForkJoinPool` is doing.
-2. These calls require a very explicit timeout parameter, specified as
-   a `FiniteDuration`, triggering a `TimeoutException` in case that
-   specified timespan is exceeded without the source being ready.
+1. これらのコールは、Scalaの`BlockContext`を使って実装されています。
+   ブロッキング操作が実行されていることを基礎となるスレッドプールにシグナリングし、スレッドプールがそれに対応できるようにします。
+   例えばScalaの`ForkJoinPool`がやっているように、プールにスレッドを追加することを決めるかもしれません。
+2. これらの呼び出しには、非常に明示的なタイムアウト・パラメータが必要で、それは`FiniteDuration`として指定されます。
 
-Therefore in order to block on a result, you have to first convert it
-into a `Future` by means of `runToFuture` and then you can block on it:
+したがって、まず `runToFuture`で結果を`Future` に変換してから、結果をブロックすることができます:
 
 ```scala mdoc:silent:reset
 import monix.eval.Task
@@ -296,48 +255,39 @@ import monix.execution.schedulers.TestScheduler
 implicit val global = TestScheduler()
 ```
 
-**NOTE:** There is [no blocking](https://github.com/scala-js/scala-js/issues/186)
-on Scala.js by design.
+**注:** Scala.jsでは設計上、[ブロッキングはありません](https://github.com/scala-js/scala-js/issues/186)。
 
-### Try Immediate Execution
+### 即時実行を試みる
 
-Monix is against blocking, we've established that. But clearly some
-`Task` instances can be evaluated immediately on the current logical
-thread, if allowed by the execution model. And for *optimization
-purposes*, we might want to act immediately on their results, avoiding
-dealing with callbacks.
+Monixはブロッキングに反対していることは確かです。
+しかし、実行モデルで許可されていれば、現在の論理スレッドですぐに評価できる`Task`インスタンスもあることは明らかです。
+そして*最適化のため*、コールバックの処理を避けて、その結果をすぐに実行したいと思うかもしれません。
 
-To do that, we can use `runSyncStep`:
+そのためには、`runSyncStep`を使います:
 
 ```scala mdoc:silent:nest
 val task = Task.eval("Hello!")
 
 task.runSyncStep match {
   case Left(task) =>
-    // No luck, this Task really wants async execution
+    // このタスクは非同期実行を強く望んでいるのでうまくいきません
     task.runToFuture.foreach(r => println(s"Async: $r"))
   case Right(result) =>
     println(s"Got lucky: $result")
 }
 ```
 
-**NOTE:** as it happens, by default the `runSyncStep` evaluation is
-executing things on the current thread, unless an async boundary is
-forced by the underlying loop. So this code will always print "*Got
-Lucky*" ;-)
+**注:** 偶然にも、`runSyncStep`のデフォルト評価は、基礎となるループで非同期の境界が強制されない限り、現在のスレッドで処理を実行します。
+そのため、このコードは常に*GotLucky*と表示されます。 ;-)
 
-## Simple Builders
+## シンプルなビルダー
 
-If you can accept its possibly asynchronous nature, `Task` can replace
-functions accepting zero arguments, Scala by-name params and `lazy
-val`. And any Scala `Future` is convertible to `Task`.
+非同期の可能性があるという性質を受け入れることができれば、`Task`は引数がない関数、Scalaの名前渡しパラメータ、`lazy val`を置き換えることができます。 また、Scala の `Future` はすべて `Task` に変換できます。
 
 ### Task.now
 
-
-`Task.now`
-lifts an already known value in the `Task` context,
-the equivalent of `Future.successful` or of `Applicative.pure`:
+`Task.now`は、`Task`コンテキストで既に知られている値をリフトします。
+これは`Future.successful`や`Applicative.pure`に相当します:
 
 ```scala mdoc:silent:nest
 val task = Task.now { println("Effect"); "Hello!" }
@@ -345,13 +295,9 @@ val task = Task.now { println("Effect"); "Hello!" }
 // task: monix.eval.Task[String] = Delay(Now(Hello!))
 ```
 
-### Task.eval (delay)
+### Task.eval (遅延)
 
-`Task.eval`
-is the equivalent of `Function0`, taking a function
-that will always be evaluated on `runToFuture`, possibly on the same
-thread (depending on the chosen
-[execution model](../execution/scheduler.md#execution-model)):
+Task.eval`は、`Function0`と同等であり`runToFuture`で可能な限り同じスレッドで評価される関数を受け取ります([選択された実行モデル](../execution/scheduler.md#execution-model) によります)。
 
 ```scala mdoc:silent:nest
 val task = Task.eval { println("Effect"); "Hello!" }
@@ -361,23 +307,20 @@ task.runToFuture.foreach(println)
 //=> Effect
 //=> Hello!
 
-// The evaluation (and thus all contained side effects)
-// gets triggered on each runToFuture:
+// 評価(およびそれに伴うすべての副作用)は
+// runToFutureごとに起動されます:
 task.runToFuture.foreach(println)
 //=> Effect
 //=> Hello!
 ```
 
-NOTE: for Scalaz converts, this function is also aliased as `Task.delay`.
+注: Scalazの場合、この関数は`Task.delay`と呼ばれています。
 
 ### Task.evalOnce
 
-`Task.evalOnce`
-is the equivalent of a `lazy val`, a type that cannot
-be precisely expressed in Scala. The `evalOnce` builder does
-memoization on the first run, such that the result of the evaluation
-will be available for subsequent runs. It also has guaranteed
-idempotency and thread-safety:
+`Task.evalOnce` は、Scalaでは正確に表現できない型である「lazy val」に相当します。
+`evalOnce`ビルダーは最初の実行時にメモ化を行い、評価の結果を次の実行時にも利用できるようにします。
+このビルダーは冪等性を保証し、スレッドセーフです:
 
 ```scala mdoc:silent:nest
 val task = Task.evalOnce { println("Effect"); "Hello!" }
@@ -387,18 +330,16 @@ task.runToFuture.foreach(println)
 //=> Effect
 //=> Hello!
 
-// Result was memoized on the first run!
+// 結果は最初の実行でメモ化されました！
 task.runToFuture.foreach(println)
 //=> Hello!
 ```
 
-NOTE: this operation is effectively `Task.eval(f).memoize`.
+注: この操作は実質的に`Task.eval(f).memoize`です。
 
-### Task.defer (suspend)
+### Task.defer (延期)
 
-`Task.defer`
-is about building a factory of tasks. For example this
-will behave approximately like `Task.eval`:
+`Task.defer` は、タスクのファクトリを構築するためのものです。例えばこれは、`Task.eval`とほぼ同様の動作をします。
 
 ```scala mdoc:silent:nest
 val task = Task.defer {
@@ -415,11 +356,11 @@ task.runToFuture.foreach(println)
 //=> Hello!
 ```
 
-NOTE: for Scalaz converts, this function is also aliased as `Task.suspend`.
+注: Scalazの場合、この関数は`Task.suspend`という名前で呼ばれています。
 
 ### Task.fromFuture
 
-`Task.fromFuture` can convert any Scala `Future` instance into a `Task`:
+`Task.fromFuture`は、任意の`Future`インスタンスを`Task`に変換することができます:
 
 ```scala mdoc:silent:nest
 import scala.concurrent.Future
@@ -434,11 +375,8 @@ task.runToFuture.foreach(println)
 //=> Hello!
 ```
 
-Note that `fromFuture` takes a strict argument and that may not be
-what you want. You might want a factory of `Future`. The design of
-`Task` however is to have fine-grained control over the evaluation
-model, so in case you want a factory, you need to combine it with
-`Task.defer`:
+なお、`fromFuture`は厳密な引数を取りますが、これはあなたが望むものではないかもしれません。
+しかし、`Task`は評価モデルを細かく制御することを目的としているので、ファクトリーが必要な場合は`Task.defer`と組み合わせる必要があります:
 
 ```scala mdoc:silent:nest
 val task = Task.defer {
@@ -457,10 +395,8 @@ task.runToFuture.foreach(println)
 
 ### Task.deferFuture
 
-A `Future` reference is like a strict value, meaning that when you receive one,
-whatever process that's supposed to complete it has probably started already.
-
-Therefore it makes sense to defer the evaluation of futures when building tasks:
+`Future`の参照は厳密な値のようなもので、これを受け取るとそれを実行させるためのプロセスがすでに始まっていることになります。  
+そのため、Taskを構築する際にFutureの評価を先送りすることに意味があります。
 
 ```scala mdoc:silent:nest
 val task = Task.defer {
@@ -469,8 +405,7 @@ val task = Task.defer {
 }
 ```
 
-As a shortcut, you can also use the `deferFuture` builder, which is equivalent
-with the above:
+上記の近道として、`deferFuture`ビルダーを使うこともできます:
 
 ```scala mdoc:silent:nest
 val task = Task.deferFuture {
@@ -480,12 +415,10 @@ val task = Task.deferFuture {
 
 ### Task.deferFutureAction
 
-Wraps calls that generate `Future` results into `Task`, provided a
-callback with an injected `Scheduler` to act as the necessary
-`ExecutionContext`.
+`Future` の結果を生成するコールを`Task`にラップし、必要な`ExecutionContext`として動作する`Scheduler`を注入したコールバックを提供します。
 
-This builder helps with wrapping `Future`-enabled APIs that need an
-implicit `ExecutionContext` to work. Consider this example:
+このビルダーは、暗黙の`ExecutionContext`を必要とする`Future`対応APIの使用に役立ちます。  
+以下の例を考えてみましょう:
 
 ```scala mdoc:silent:nest
 import scala.concurrent.{ExecutionContext, Future}
@@ -494,22 +427,18 @@ def sumFuture(list: Seq[Int])(implicit ec: ExecutionContext): Future[Int] =
   Future(list.sum)
 ```
 
-We'd like to wrap this function into one that returns a lazy `Task`
-that evaluates this sum every time it is called, because that's how
-tasks work best. However in order to invoke this function an
-`ExecutionContext` is needed:
+この関数を、呼ばれるたびに和を評価する遅延型の`Task`を返す関数にしたいと思います。
+Taskが最もよく機能する方法だからです。しかし、この関数を呼び出すためには`ExecutionContext`が必要です:
 
 ```scala mdoc:silent:nest
 def sumTask(list: Seq[Int])(implicit ec: ExecutionContext): Task[Int] =
   Task.deferFuture(sumFuture(list))
 ```
 
-But this is not only superfluous, but against the best practices of
-using `Task`. The difference is that `Task` takes a `Scheduler`
-(inheriting from `ExecutionContext`) only when `runToFuture` gets called,
-but we don't need it just for building a `Task` reference.  With
-`deferFutureAction` we get to have an injected `Scheduler` in the
-passed callback:
+しかしこれは余計なお世話であるだけでなく、`Task`を使用するベストプラクティスに反しています。
+その違いは、`Task` は`runToFuture`が呼ばれたときにのみ`Scheduler`(`ExecutionContext`を継承したもの) を取るということです。
+しかし、`Task`の参照を構築するためだけにそれを必要とするわけではありません。
+`DeferFutureAction`では、渡されたコールバックに`Scheduler`が注入されます:
 
 ```scala mdoc:silent:nest
 def sumTask(list: Seq[Int]): Task[Int] =
@@ -518,36 +447,31 @@ def sumTask(list: Seq[Int]): Task[Int] =
   }
 ```
 
-Voilà! No more implicit `ExecutionContext` passed around.
+Voilà!(ほらできました)。もう暗黙のパラメータ`ExecutionContext`を渡す必要はありません。
 
 ### Task.executeAsync, Task.asyncBoundary, Task.executeOn
 
-`Task.executeAsync` ensures an asynchronous boundary, forcing the fork of a
-(logical) thread on execution. Sometimes we are doing something really
-wasteful and we want to guarantee that an asynchronous boundary
-happens, given that by default
-the [execution model](../execution/scheduler.md#execution-model)
-prefers to execute things on the current thread, at first.
+`Task.executeAsync`は、実行時に(論理)スレッドのフォークを強制することで、非同期の境界を確保します。
+時には本当に無駄なことをしていて、非同期の境界が発生することを保証したいことがあります。
+デフォルトでは[実行モデル](../execution/scheduler.md#execution-model) は最初は現在のスレッドでの実行を好みます。
 
-So this guarantees that our task will get executed asynchronously:
+これにより、私たちのタスクが非同期に実行されることが保証されます:
 
 ```scala mdoc:silent:nest
 val task = Task.eval("Hello!").executeAsync
 ```
 
-ExecuteOn allows us to specify an alternative `Scheduler` to use.
-You see, the run-loop of `Task` always has a `Scheduler` available, but
-for certain operations you might want to divert the processing to an alternative
-scheduler. For example you might want to execute blocking I/O operations
-on an alternative thread-pool.
+`ExecuteOn`では、使用する代替の`Scheduler`を指定することができます。
+つまり、`Task` の実行ループでは常に利用できる`Scheduler`が使用されますが、特定の操作では別のスケジューラに処理を振り分けたい場合があります。
+例えば、ブロッキングI/O操作を別のスレッドプールで実行したい場合などです。
 
-Lets assume we have 2 thread-pools:
+2つのスレッドプールがあるとします:
 
 ```scala mdoc:silent:nest
-// The default scheduler
+// デフォルトのScheduler
 import monix.execution.Scheduler.Implicits.global
 
-// Creating a special scheduler meant for I/O
+// I/Oに特化したSchedulerの作成
 import monix.execution.Scheduler
 lazy val io = Scheduler.io(name="my-io")
 ```
@@ -558,10 +482,10 @@ implicit val global = TestScheduler()
 lazy val io = TestScheduler()
 ```
 
-Then we can manage what executes on which:
+そして、何がどのように実行されるかを管理することができます:
 
 ```scala mdoc:silent:nest
-// Override the default Scheduler by fork:
+// デフォルトのSchedulerをforkで上書きする:
 val source = Task(println(s"Running on thread: ${Thread.currentThread.getName}"))
 val forked = source.executeOn(io)
 
@@ -571,9 +495,8 @@ forked.runToFuture
 //=> Running on thread: my-io-4
 ```
 
-Note that, unless another asynchronous boundary is scheduled on the
-default `Scheduler`, execution remains on the last scheduler (thread-pool)
-used. Notice what happens in this combination:
+デフォルトの`Scheduler`で別の非同期境界がスケジューリングされない限り、最後に使用されたスケジューラー(スレッドプール)で実行されます。  
+この組み合わせで何が起こるかというと:
 
 ```scala mdoc:silent:nest
 val onFinish = Task.eval(
@@ -591,8 +514,7 @@ val cancelable = {
 //=> Ends on thread: my-io-1
 ```
 
-But if we insert another async boundary, then it switches back
-to the default:
+しかし、別の非同期バウンダリを挿入するとデフォルトに戻ります:
 
 ```scala mdoc:silent:nest
 val asyncBoundary = Task.unit.executeAsync
@@ -612,25 +534,21 @@ val cancelable = {
 //=> Ends on thread: ForkJoinPool-1-worker-5
 ```
 
-But `Task` also provides a convenient operator for introducing an
-asynchronous boundary without having to manually do this trick, called
-`Task.asyncBoundary`:
+しかし、`Task`にはこのようなトリックを手動で行わなくても、非同期境界を導入するための便利なメソッド`Task.asyncBoundary`があります:
 
 ```scala mdoc:silent:nest
 val task = {
-  source // executes on global
-    .flatMap(_ => forked) // executes on io
-    .asyncBoundary // switch back to global
-    .doOnFinish(_ => onFinish) // executes on global
+  source // globalで実行
+    .flatMap(_ => forked) // ioで実行
+    .asyncBoundary // globalに戻す
+    .doOnFinish(_ => onFinish) // globalで実行
     .runToFuture
 }
 ```
 
-Note that overriding of the scheduler can only happen once, as
-`Task` instances are immutable, so the following does not work,
-because for the `forked` instance the `Scheduler` was already
-set in stone and we only have flexibility to override the
-default if it hasn't been overridden already:
+Schedulerのオーバーライドは一度しかできないことに注意してください。
+`Task`インスタンスは不変なので、次のようにはなりません。
+なぜなら、`forked`インスタンスでは`Scheduler`はすでに決まったものが設定されているからです:
 
 ```scala mdoc:silent:nest
 // Trying to execute on global
@@ -638,15 +556,12 @@ forked.executeOn(global).runToFuture
 //=> Running on thread: my-io-4
 ```
 
-**General advice:** unless you're doing blocking I/O, keep using
-the default thread-pool, with `global` being a good default.
-For blocking I/O it is OK to have a second thread-pool,
-but isolate those I/O operations and only override the scheduler
-for actual I/O operations.
+**助言:** ブロッキングI/Oを行っていない限り、デフォルトのスレッドプールを使い続けます。`global`が良いデフォルトです。
+ブロッキングI/Oの場合は、2つ目のスレッドプールを使用しても問題ありません。しかし、それらのI/O操作を分離し、実際のI/O操作のためにのみスケジューラをオーバーライドします。
 
 ### Task.raiseError
 
-`Task.raiseError` can lift errors in the monadic context of `Task`:
+`Task.raiseError`は、`Task`のモナディックコンテキストでエラーをリフトすることができます:
 
 ```scala mdoc:silent:nest
 import scala.concurrent.TimeoutException
@@ -661,52 +576,47 @@ error.runAsync(result => println(result))
 
 ### Task.never
 
-`Task.never` returns a `Task` instance that never completes:
+`Task.never` は、決して完了しない`Task`インスタンスを返します:
 
 ```scala mdoc:silent:nest
 import scala.concurrent.duration._
 import scala.concurrent.TimeoutException
 
-// A Task instance that never completes
+// 終了しないTaskインスタンス
 val never = Task.never[Int]
 
 val timedOut = never.timeoutTo(3.seconds,
   Task.raiseError(new TimeoutException))
 
 timedOut.runAsync(r => println(r))
-// After 3 seconds:
+// 3秒後:
 // => Left(java.util.concurrent.TimeoutException)
 ```
 
-This instance is shared, so that can relieve some stress from the
-garbage collector.
+このインスタンスは共有されているので、ガベージコレクターのストレスを軽減することができます。
 
 ### Task.unit
 
-`Task.unit` is returning an already completed `Task[Unit]` instance,
-provided as a utility, to spare you creating new instances with
-`Task.now(())`:
+`Task.unit`は、すでに完了した`Task[Unit]`インスタンスを返します。
+これはユーティリティとして提供されており、`Task.now(())`で新しいインスタンスを作成しなくて済むようになっています:
 
 ```scala mdoc:silent:nest
 val task = Task.unit
 // task: monix.eval.Task[Unit] = Delay(Now(()))
 ```
 
-This instance is shared, so that can relieve some stress from the
-garbage collector.
+このインスタンスは共有されているので、ガベージコレクターのストレスを軽減することができます。
 
-## Asynchronous Builders
+## 非同期型ビルダー
 
-You can use any async API to build a `Task`. There's an unsafe
-version, for people knowing what they are doing and a safe version, that
-handles some of the nitty-gritty automatically.
+あらゆる非同期APIを使って、`Task`を作ることができます。
+安全でないバージョンと、細かい処理を自動的に行うセーフバージョンがあります。
+これは、細かい作業を自動的に処理するものです。
 
 ### Task.create
 
-Also known as `Task.async` (for Scalaz refugees), the `Task.create`
-function allows for creating an asynchronous `Task` using a
-callback-based API. For example, let's create a utility that evaluates
-expressions with a given delay:
+`Task.create`は、Scalazをお使いならおなじみの`Task.async`と同じです。コールバックベースのAPIを使って非同期の`Task`を作成することができます。  
+例えば、与えられた遅延時間で式を評価するユーティリティを作ってみましょう:
 
 ```scala mdoc:silent:nest
 import scala.util.Try
@@ -715,24 +625,20 @@ import concurrent.duration._
 def evalDelayed[A](delay: FiniteDuration)
   (f: => A): Task[A] = {
 
-  // On execution, we have the scheduler and
-  // the callback injected ;-)
+  // 実行時にはスケジューラーとコールバックが注入されます ;-)
   Task.create { (scheduler, callback) =>
     val cancelable =
       scheduler.scheduleOnce(delay) {
         callback(Try(f))
       }
 
-    // We must return something that can
-    // cancel the async computation
+    // 非同期の計算をキャンセルする次のようなものを返さなければなりません
     cancelable
   }
 }
 ```
 
-And here's a possible implementation of
-[Task.fromFuture](#taskfromfuture), in case you choose to implement it
-yourself:
+そして、[Task.fromFuture](#taskfromfuture) を実装する場合の可能性として、以下のようなものを自分自身で実装します:
 
 ```scala mdoc:silent:nest
 import monix.execution.Cancelable
@@ -748,13 +654,13 @@ def fromFuture[A](f: Future[A]): Task[A] =
         callback.onError(ex)
     })(scheduler)
 
-    // Scala Futures are not cancelable, so
-    // we shouldn't pretend that they are!
+    // ScalaのFutureたちはキャンセルできないので、
+    // キャンセルできるかのように振る舞うべきではありません！
     Cancelable.empty
   }
 ```
 
-Some notes:
+いくつかの注意点:
 
 - Tasks created with this builder are guaranteed to execute
   asynchronously (on another logical thread)
