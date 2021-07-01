@@ -662,49 +662,34 @@ def fromFuture[A](f: Future[A]): Task[A] =
 
 いくつかの注意点:
 
-- Tasks created with this builder are guaranteed to execute
-  asynchronously (on another logical thread)
-- The [Scheduler](../execution/scheduler.md) gets injected and with
-  it we can schedule things for async execution, we can delay,
-  etc...
-- But as said, this callback will already execute asynchronously, so
-  you don't need to explicitly schedule things to run on the provided
-  `Scheduler`, unless you really need to do it.
-- [The Callback](../execution/callback.md) gets injected on execution and that
-  callback has a contract. In particular you need to execute
-  `onSuccess` or `onError` or `apply` only once. The implementation
-  does a reasonably good job to protect against contract violations,
-  but if you do call it multiple times, then you're doing it risking
-  undefined and nondeterministic behavior.
-- It's OK to return a `Cancelable.empty` in case the executed
-  process really can't be canceled in time, but you should strive to
-  return a cancelable that does cancel your execution, if possible.
+- このビルダーで作成されたタスクは、非同期に(別の論理スレッドで)実行されることが保証されています。
+- [Scheduler](../execution/scheduler.md) が注入され、それによって非同期実行のために物事をスケジュールしたり、遅延させたりすることができます。
+- しかし、前述のとおりこのコールバックはすでに非同期に実行されるので、用意された`Scheduler`で実行するように明示的にスケジュールする必要はありません。
+- [コールバック](../execution/callback.md) は実行時に注入され、そのコールバックには契約があります。
+  具体的には、`onSuccess`、`onError`、`apply`を一度だけ実行する必要があります。
+- 実行された処理が本当に時間内にキャンセルできない場合は、`Cancelable.empty`を返しても構いませんが、
+  できれば実行をキャンセルするような可能性があれば`Cancelable`を返すように努めるべきです。
 
 
-## Memoization
+## メモ化 
 
-The
-[Task#memoize]({{ page.path | api_base_url }}monix/eval/Task.html#memoize:monix.eval.Task[A])
-operator can take any `Task` and apply memoization on the first `runToFuture`,
-such that:
+[Task#memoize]({{ page.path | api_base_url }}monix/eval/Task.html#memoize:monix.eval.Task[A]) メソッドは、
+任意の`Task`を受け取り、最初の`runToFuture`でメモ化を適用することができます:
 
-1. you have guaranteed idempotency, calling `runToFuture` multiple times
-   will have the same effect as calling it once
-2. subsequent `runToFuture` calls will reuse the result computed by the
-   first `runToFuture`
+1. 冪等性が保証されている場合、`runToFuture`を複数回呼び出しても、1回呼び出したのと同じ効果が得られます。
+2. 後続の`runToFuture`呼び出しは、最初の`runToFuture`で計算された結果を再利用します。
 
-So `memoize` effectively caches the result of the first `runToFuture`.
-In fact we can say that:
+つまり、`memoize`は、最初の`runToFuture`の結果を効果的にキャッシュするのです。  
+実際にはこう言えます:
 
 ```scala
 Task.evalOnce(f) <-> Task.eval(f).memoize
 ```
 
-They are effectively the same.  And `memoize` works
-with any task reference:
+これらは事実上同じで、`memoize`は以下のように動作します:
 
 ```scala mdoc:silent:nest
-// Has async execution, to do the .apply semantics
+// 非同期実行で、.applyのセマンティクスを行う
 val task = Task { println("Effect"); "Hello!" }
 
 val memoized = task.memoize
@@ -717,13 +702,12 @@ memoized.runToFuture.foreach(println)
 //=> Hello!
 ```
 
-### Memoize Only on Success
+### 成功したときだけメモ化する
 
-Sometimes you just want memoization, along with idempotency
-guarantees, only for successful values. For failures you might want to
-keep retrying until a successful value is available.
+時には、冪等性を保証した上で、成功した値だけをメモ化したい場合があります。
+失敗した場合には 成功した値が得られるまで再試行したい場合があります。
 
-This is where the `memoizeOnSuccess` operator comes in handy:
+そこで便利なのが`memoizeOnSuccess`メソッドです:
 
 ```scala mdoc:silent:nest
 var effect = 0
@@ -735,36 +719,32 @@ val source = Task.eval {
 
 val cached = source.memoizeOnSuccess
 
-val f1 = cached.runToFuture // yields RuntimeException
-val f2 = cached.runToFuture // yields RuntimeException
-val f3 = cached.runToFuture // yields 3
-val f4 = cached.runToFuture // yields 3
+val f1 = cached.runToFuture // RuntimeException が生じる
+val f2 = cached.runToFuture // RuntimeException が生じる
+val f3 = cached.runToFuture // 3 になる
+val f4 = cached.runToFuture // 3 になる
 ```
 
-### Memoize versus runToFuture
+### MemoizeとrunToFutureの比較
 
-You can say that when we do this:
+次の例を見てみましょう:
 
 ```scala mdoc:silent:nest
 val task = Task { println("Effect"); "Hello!" }
 val future = task.runToFuture
 ```
 
-That `future` instance is also going to be a memoized value of the
-first `runToFuture` execution, which can be reused for other `onComplete`
-subscribers.
+この`Future`インスタンスは、最初の`runToFuture`実行のメモ化された値で、他の`onComplete`サブスクライバで再利用できます。
 
-The difference is the same as the difference between `Task` and
-`Future`. The `memoize` operation is lazy, evaluation only being
-triggered on the first `runToFuture`, whereas the result of `runToFuture` is
-eager.
+この違いは、`Task`と`Future`の違いと同じです。
+`memoize`の操作は遅延で、最初の`runToFuture`でのみ評価が行われます。
+一方、`runToFuture`の結果は先行です。
 
-## Operations
+## 操作
 
-### FlatMap and Tail-Recursive Loops
+### FlatMapと末尾再帰ループ
 
-So let's start with a simple example that calculates the N-th number in
-the Fibonacci sequence:
+まず、フィボナッチ数列のN番目の数を計算する簡単な例を見てみましょう:
 
 ```scala mdoc:silent:nest
 import scala.annotation.tailrec
@@ -778,10 +758,8 @@ def fib(cycles: Int, a: BigInt, b: BigInt): BigInt = {
 }
 ```
 
-We need this to be tail-recursive, hence the use of the
-[@tailrec](http://www.scala-lang.org/api/current/index.html#scala.annotation.tailrec)
-annotation from Scala's standard library. And if we'd describe it with
-`Task`, one possible implementation would be:
+これは末尾再帰的であることが必要で、そのためには[@tailrec](http://www.scala-lang.org/api/current/index.html#scala.annotation.tailrec) アノテーションを使用していますが，これはScalaの標準ライブラリにあります。
+そして，もしこれを`Task`で記述すると、次のような実装が可能です:
 
 ```scala mdoc:silent:nest
 def fib(cycles: Int, a: BigInt, b: BigInt): Task[BigInt] = {
