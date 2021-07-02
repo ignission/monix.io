@@ -30,15 +30,15 @@
   <meta content="Task &amp;mdash; Monix" property="og:title">
   <meta content="A data type for controlling possibly lazy &amp;amp; asynchronous computations, useful for controlling side-effects, avoiding nondeterminism and callback-hell." property="og:description">
   <meta content="https://monix.io/docs/3x/eval/task.html" property="og:url">
-  <meta content="2021-06-30T15:09:19+00:00" property="article:modified_time">
+  <meta content="2021-07-01T14:25:06+00:00" property="article:modified_time">
     
   <meta content="article" property="og:type">
   <meta property="og:image" content="https://monix.io/public/images/monix-logo.png" />
   <meta property="og:image:secure_url" content="https://monix.io/public/images/monix-logo.png" />
   <!-- CSS -->
-  <link rel="stylesheet" href="/public/css/all.css?1625065946683260575">
+  <link rel="stylesheet" href="/public/css/all.css?1625192132783037313">
   <!--[if lt IE 9]>
-  <link rel="stylesheet" href="/public/css/forkme.ie.css?1625065946683260575">
+  <link rel="stylesheet" href="/public/css/forkme.ie.css?1625192132783037313">
   <![endif]-->
 
   <link rel="stylesheet" href="//fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
@@ -109,8 +109,8 @@
 
   
   <time class="post-date" itemprop="dateModified"
-    datetime="2021-06-30">
-    <b>ページの更新日:</b> 30 Jun 2021
+    datetime="2021-07-01">
+    <b>ページの更新日:</b> 01 Jul 2021
   </time>
   <nav role="navigation" id="type-info">
     <a href="/api/3.4/monix/eval/Task.html">APIドキュメント</a>
@@ -162,15 +162,15 @@
       <li><a href="#taskcreate">Task.create</a></li>
     </ul>
   </li>
-  <li><a href="#memoization">Memoization</a>
+  <li><a href="#メモ化">メモ化</a>
     <ul>
-      <li><a href="#memoize-only-on-success">Memoize Only on Success</a></li>
-      <li><a href="#memoize-versus-runtofuture">Memoize versus runToFuture</a></li>
+      <li><a href="#成功したときだけメモ化する">成功したときだけメモ化する</a></li>
+      <li><a href="#memoizeとruntofutureの比較">MemoizeとrunToFutureの比較</a></li>
     </ul>
   </li>
-  <li><a href="#operations">Operations</a>
+  <li><a href="#操作">操作</a>
     <ul>
-      <li><a href="#flatmap-and-tail-recursive-loops">FlatMap and Tail-Recursive Loops</a></li>
+      <li><a href="#flatmapと末尾再帰ループ">FlatMapと末尾再帰ループ</a></li>
       <li><a href="#parallelism-catsparallel">Parallelism (cats.Parallel)</a></li>
       <li><a href="#gather-results-from-a-seq-of-tasks">Gather results from a Seq of Tasks</a></li>
       <li><a href="#race">Race</a></li>
@@ -955,55 +955,40 @@ Taskが最もよく機能する方法だからです。しかし、この関数�
 <p>いくつかの注意点:</p>
 
 <ul>
-  <li>Tasks created with this builder are guaranteed to execute
-asynchronously (on another logical thread)</li>
-  <li>The <a href="/docs/3x/execution/scheduler.html">Scheduler</a> gets injected and with
-it we can schedule things for async execution, we can delay,
-etc…</li>
-  <li>But as said, this callback will already execute asynchronously, so
-you don’t need to explicitly schedule things to run on the provided
-<code class="language-plaintext highlighter-rouge">Scheduler</code>, unless you really need to do it.</li>
-  <li><a href="/docs/3x/execution/callback.html">The Callback</a> gets injected on execution and that
-callback has a contract. In particular you need to execute
-<code class="language-plaintext highlighter-rouge">onSuccess</code> or <code class="language-plaintext highlighter-rouge">onError</code> or <code class="language-plaintext highlighter-rouge">apply</code> only once. The implementation
-does a reasonably good job to protect against contract violations,
-but if you do call it multiple times, then you’re doing it risking
-undefined and nondeterministic behavior.</li>
-  <li>It’s OK to return a <code class="language-plaintext highlighter-rouge">Cancelable.empty</code> in case the executed
-process really can’t be canceled in time, but you should strive to
-return a cancelable that does cancel your execution, if possible.</li>
+  <li>このビルダーで作成されたタスクは、非同期に(別の論理スレッドで)実行されることが保証されています。</li>
+  <li><a href="/docs/3x/execution/scheduler.html">Scheduler</a> が注入され、それによって非同期実行のために物事をスケジュールしたり、遅延させたりすることができます。</li>
+  <li>しかし、前述のとおりこのコールバックはすでに非同期に実行されるので、用意された<code class="language-plaintext highlighter-rouge">Scheduler</code>で実行するように明示的にスケジュールする必要はありません。</li>
+  <li><a href="/docs/3x/execution/callback.html">コールバック</a> は実行時に注入され、そのコールバックには契約があります。
+具体的には、<code class="language-plaintext highlighter-rouge">onSuccess</code>、<code class="language-plaintext highlighter-rouge">onError</code>、<code class="language-plaintext highlighter-rouge">apply</code>を一度だけ実行する必要があります。</li>
+  <li>実行された処理が本当に時間内にキャンセルできない場合は、<code class="language-plaintext highlighter-rouge">Cancelable.empty</code>を返しても構いませんが、
+できれば実行をキャンセルするような可能性があれば<code class="language-plaintext highlighter-rouge">Cancelable</code>を返すように努めるべきです。</li>
 </ul>
     
-      <h2 id="memoization">
+      <h2 id="メモ化">
         
         
-          Memoization <a href="#memoization" class="anchor">#</a>
+          メモ化 <a href="#メモ化" class="anchor">#</a>
         
         
       </h2>
 
-<p>The
-<a href="/api/3.4/monix/eval/Task.html#memoize:monix.eval.Task[A]">Task#memoize</a>
-operator can take any <code class="language-plaintext highlighter-rouge">Task</code> and apply memoization on the first <code class="language-plaintext highlighter-rouge">runToFuture</code>,
-such that:</p>
+<p><a href="/api/3.4/monix/eval/Task.html#memoize:monix.eval.Task[A]">Task#memoize</a> メソッドは、
+任意の<code class="language-plaintext highlighter-rouge">Task</code>を受け取り、最初の<code class="language-plaintext highlighter-rouge">runToFuture</code>でメモ化を適用することができます:</p>
 
 <ol>
-  <li>you have guaranteed idempotency, calling <code class="language-plaintext highlighter-rouge">runToFuture</code> multiple times
-will have the same effect as calling it once</li>
-  <li>subsequent <code class="language-plaintext highlighter-rouge">runToFuture</code> calls will reuse the result computed by the
-first <code class="language-plaintext highlighter-rouge">runToFuture</code></li>
+  <li>冪等性が保証されている場合、<code class="language-plaintext highlighter-rouge">runToFuture</code>を複数回呼び出しても、1回呼び出したのと同じ効果が得られます。</li>
+  <li>後続の<code class="language-plaintext highlighter-rouge">runToFuture</code>呼び出しは、最初の<code class="language-plaintext highlighter-rouge">runToFuture</code>で計算された結果を再利用します。</li>
 </ol>
 
-<p>So <code class="language-plaintext highlighter-rouge">memoize</code> effectively caches the result of the first <code class="language-plaintext highlighter-rouge">runToFuture</code>.
-In fact we can say that:</p>
+<p>つまり、<code class="language-plaintext highlighter-rouge">memoize</code>は、最初の<code class="language-plaintext highlighter-rouge">runToFuture</code>の結果を効果的にキャッシュするのです。<br />
+実際にはこう言えます:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">Task</span><span class="o">.</span><span class="py">evalOnce</span><span class="o">(</span><span class="n">f</span><span class="o">)</span> <span class="o">&lt;-&gt;</span> <span class="nv">Task</span><span class="o">.</span><span class="py">eval</span><span class="o">(</span><span class="n">f</span><span class="o">).</span><span class="py">memoize</span>
 </code></pre></div></div>
 
-<p>They are effectively the same.  And <code class="language-plaintext highlighter-rouge">memoize</code> works
-with any task reference:</p>
+<p>これらは事実上同じで、<code class="language-plaintext highlighter-rouge">memoize</code>は以下のように動作します:</p>
 
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Has async execution, to do the .apply semantics</span>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// 非同期実行で、.applyのセマンティクスを行う</span>
 <span class="k">val</span> <span class="nv">task</span> <span class="k">=</span> <span class="nc">Task</span> <span class="o">{</span> <span class="nf">println</span><span class="o">(</span><span class="s">"Effect"</span><span class="o">);</span> <span class="s">"Hello!"</span> <span class="o">}</span>
 
 <span class="k">val</span> <span class="nv">memoized</span> <span class="k">=</span> <span class="nv">task</span><span class="o">.</span><span class="py">memoize</span>
@@ -1016,19 +1001,18 @@ with any task reference:</p>
 <span class="c1">//=&gt; Hello!</span>
 </code></pre></div></div>
     
-      <h3 id="memoize-only-on-success">
+      <h3 id="成功したときだけメモ化する">
         
         
-          Memoize Only on Success <a href="#memoize-only-on-success" class="anchor">#</a>
+          成功したときだけメモ化する <a href="#成功したときだけメモ化する" class="anchor">#</a>
         
         
       </h3>
 
-<p>Sometimes you just want memoization, along with idempotency
-guarantees, only for successful values. For failures you might want to
-keep retrying until a successful value is available.</p>
+<p>時には、冪等性を保証した上で、成功した値だけをメモ化したい場合があります。
+失敗した場合には 成功した値が得られるまで再試行したい場合があります。</p>
 
-<p>This is where the <code class="language-plaintext highlighter-rouge">memoizeOnSuccess</code> operator comes in handy:</p>
+<p>そこで便利なのが<code class="language-plaintext highlighter-rouge">memoizeOnSuccess</code>メソッドです:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="n">effect</span> <span class="k">=</span> <span class="mi">0</span>
 
@@ -1039,53 +1023,49 @@ keep retrying until a successful value is available.</p>
 
 <span class="k">val</span> <span class="nv">cached</span> <span class="k">=</span> <span class="nv">source</span><span class="o">.</span><span class="py">memoizeOnSuccess</span>
 
-<span class="k">val</span> <span class="nv">f1</span> <span class="k">=</span> <span class="nv">cached</span><span class="o">.</span><span class="py">runToFuture</span> <span class="c1">// yields RuntimeException</span>
-<span class="k">val</span> <span class="nv">f2</span> <span class="k">=</span> <span class="nv">cached</span><span class="o">.</span><span class="py">runToFuture</span> <span class="c1">// yields RuntimeException</span>
-<span class="k">val</span> <span class="nv">f3</span> <span class="k">=</span> <span class="nv">cached</span><span class="o">.</span><span class="py">runToFuture</span> <span class="c1">// yields 3</span>
-<span class="k">val</span> <span class="nv">f4</span> <span class="k">=</span> <span class="nv">cached</span><span class="o">.</span><span class="py">runToFuture</span> <span class="c1">// yields 3</span>
+<span class="k">val</span> <span class="nv">f1</span> <span class="k">=</span> <span class="nv">cached</span><span class="o">.</span><span class="py">runToFuture</span> <span class="c1">// RuntimeException が生じる</span>
+<span class="k">val</span> <span class="nv">f2</span> <span class="k">=</span> <span class="nv">cached</span><span class="o">.</span><span class="py">runToFuture</span> <span class="c1">// RuntimeException が生じる</span>
+<span class="k">val</span> <span class="nv">f3</span> <span class="k">=</span> <span class="nv">cached</span><span class="o">.</span><span class="py">runToFuture</span> <span class="c1">// 3 になる</span>
+<span class="k">val</span> <span class="nv">f4</span> <span class="k">=</span> <span class="nv">cached</span><span class="o">.</span><span class="py">runToFuture</span> <span class="c1">// 3 になる</span>
 </code></pre></div></div>
     
-      <h3 id="memoize-versus-runtofuture">
+      <h3 id="memoizeとruntofutureの比較">
         
         
-          Memoize versus runToFuture <a href="#memoize-versus-runtofuture" class="anchor">#</a>
+          MemoizeとrunToFutureの比較 <a href="#memoizeとruntofutureの比較" class="anchor">#</a>
         
         
       </h3>
 
-<p>You can say that when we do this:</p>
+<p>次の例を見てみましょう:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">task</span> <span class="k">=</span> <span class="nc">Task</span> <span class="o">{</span> <span class="nf">println</span><span class="o">(</span><span class="s">"Effect"</span><span class="o">);</span> <span class="s">"Hello!"</span> <span class="o">}</span>
 <span class="k">val</span> <span class="nv">future</span> <span class="k">=</span> <span class="nv">task</span><span class="o">.</span><span class="py">runToFuture</span>
 </code></pre></div></div>
 
-<p>That <code class="language-plaintext highlighter-rouge">future</code> instance is also going to be a memoized value of the
-first <code class="language-plaintext highlighter-rouge">runToFuture</code> execution, which can be reused for other <code class="language-plaintext highlighter-rouge">onComplete</code>
-subscribers.</p>
+<p>この<code class="language-plaintext highlighter-rouge">Future</code>インスタンスは、最初の<code class="language-plaintext highlighter-rouge">runToFuture</code>実行のメモ化された値で、他の<code class="language-plaintext highlighter-rouge">onComplete</code>サブスクライバで再利用できます。</p>
 
-<p>The difference is the same as the difference between <code class="language-plaintext highlighter-rouge">Task</code> and
-<code class="language-plaintext highlighter-rouge">Future</code>. The <code class="language-plaintext highlighter-rouge">memoize</code> operation is lazy, evaluation only being
-triggered on the first <code class="language-plaintext highlighter-rouge">runToFuture</code>, whereas the result of <code class="language-plaintext highlighter-rouge">runToFuture</code> is
-eager.</p>
+<p>この違いは、<code class="language-plaintext highlighter-rouge">Task</code>と<code class="language-plaintext highlighter-rouge">Future</code>の違いと同じです。
+<code class="language-plaintext highlighter-rouge">memoize</code>の操作は遅延で、最初の<code class="language-plaintext highlighter-rouge">runToFuture</code>でのみ評価が行われます。
+一方、<code class="language-plaintext highlighter-rouge">runToFuture</code>の結果は先行です。</p>
     
-      <h2 id="operations">
+      <h2 id="操作">
         
         
-          Operations <a href="#operations" class="anchor">#</a>
+          操作 <a href="#操作" class="anchor">#</a>
         
         
       </h2>
     
-      <h3 id="flatmap-and-tail-recursive-loops">
+      <h3 id="flatmapと末尾再帰ループ">
         
         
-          FlatMap and Tail-Recursive Loops <a href="#flatmap-and-tail-recursive-loops" class="anchor">#</a>
+          FlatMapと末尾再帰ループ <a href="#flatmapと末尾再帰ループ" class="anchor">#</a>
         
         
       </h3>
 
-<p>So let’s start with a simple example that calculates the N-th number in
-the Fibonacci sequence:</p>
+<p>まず、フィボナッチ数列のN番目の数を計算する簡単な例を見てみましょう:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">scala.annotation.tailrec</span>
 
@@ -1098,10 +1078,8 @@ the Fibonacci sequence:</p>
 <span class="o">}</span>
 </code></pre></div></div>
 
-<p>We need this to be tail-recursive, hence the use of the
-<a href="http://www.scala-lang.org/api/current/index.html#scala.annotation.tailrec">@tailrec</a>
-annotation from Scala’s standard library. And if we’d describe it with
-<code class="language-plaintext highlighter-rouge">Task</code>, one possible implementation would be:</p>
+<p>これは末尾再帰的であることが必要で、そのためには<a href="http://www.scala-lang.org/api/current/index.html#scala.annotation.tailrec">@tailrec</a> アノテーションを使用していますが，これはScalaの標準ライブラリにあります。
+そして，もしこれを<code class="language-plaintext highlighter-rouge">Task</code>で記述すると、次のような実装が可能です:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">fib</span><span class="o">(</span><span class="n">cycles</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">a</span><span class="k">:</span> <span class="kt">BigInt</span><span class="o">,</span> <span class="n">b</span><span class="k">:</span> <span class="kt">BigInt</span><span class="o">)</span><span class="k">:</span> <span class="kt">Task</span><span class="o">[</span><span class="kt">BigInt</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
  <span class="nf">if</span> <span class="o">(</span><span class="n">cycles</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">)</span>
