@@ -30,15 +30,15 @@
   <meta content="Task &amp;mdash; Monix" property="og:title">
   <meta content="A data type for controlling possibly lazy &amp;amp; asynchronous computations, useful for controlling side-effects, avoiding nondeterminism and callback-hell." property="og:description">
   <meta content="https://monix.io/docs/3x/eval/task.html" property="og:url">
-  <meta content="2021-07-01T14:25:06+00:00" property="article:modified_time">
+  <meta content="2021-07-04T14:07:24+00:00" property="article:modified_time">
     
   <meta content="article" property="og:type">
   <meta property="og:image" content="https://monix.io/public/images/monix-logo.png" />
   <meta property="og:image:secure_url" content="https://monix.io/public/images/monix-logo.png" />
   <!-- CSS -->
-  <link rel="stylesheet" href="/public/css/all.css?1625192132783037313">
+  <link rel="stylesheet" href="/public/css/all.css?1625407785205409574">
   <!--[if lt IE 9]>
-  <link rel="stylesheet" href="/public/css/forkme.ie.css?1625192132783037313">
+  <link rel="stylesheet" href="/public/css/forkme.ie.css?1625407785205409574">
   <![endif]-->
 
   <link rel="stylesheet" href="//fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
@@ -109,8 +109,8 @@
 
   
   <time class="post-date" itemprop="dateModified"
-    datetime="2021-07-01">
-    <b>ページの更新日:</b> 01 Jul 2021
+    datetime="2021-07-04">
+    <b>ページの更新日:</b> 04 Jul 2021
   </time>
   <nav role="navigation" id="type-info">
     <a href="/api/3.4/monix/eval/Task.html">APIドキュメント</a>
@@ -171,8 +171,8 @@
   <li><a href="#操作">操作</a>
     <ul>
       <li><a href="#flatmapと末尾再帰ループ">FlatMapと末尾再帰ループ</a></li>
-      <li><a href="#parallelism-catsparallel">Parallelism (cats.Parallel)</a></li>
-      <li><a href="#gather-results-from-a-seq-of-tasks">Gather results from a Seq of Tasks</a></li>
+      <li><a href="#並列性-catsparallel">並列性 (cats.Parallel)</a></li>
+      <li><a href="#タスクのシーケンスから結果を収集する">タスクのシーケンスから結果を収集する</a></li>
       <li><a href="#race">Race</a></li>
       <li><a href="#race-many">Race Many</a></li>
       <li><a href="#delay-execution">Delay Execution</a></li>
@@ -1089,15 +1089,12 @@ Taskが最もよく機能する方法だからです。しかし、この関数�
 <span class="o">}</span>
 </code></pre></div></div>
 
-<p>And now there are already differences. This is lazy, as the N-th
-Fibonacci number won’t get calculated until we <code class="language-plaintext highlighter-rouge">runToFuture</code>. The
-<code class="language-plaintext highlighter-rouge">@tailrec</code> annotation is also not needed, as this is stack (and heap)
-safe.</p>
+<p>そして今、すでに違いがあります。N番目のフィボナッチ数は、<code class="language-plaintext highlighter-rouge">runToFuture</code>するまで計算されないので、これは遅延です。
+またこれはスタック(とヒープ)セーフなので、<code class="language-plaintext highlighter-rouge">@tailrec</code>アノテーションも必要ありません。</p>
 
-<p><code class="language-plaintext highlighter-rouge">Task</code> has <code class="language-plaintext highlighter-rouge">flatMap</code>, which is the monadic <code class="language-plaintext highlighter-rouge">bind</code> operation, that for
-things like <code class="language-plaintext highlighter-rouge">Task</code> and <code class="language-plaintext highlighter-rouge">Future</code> is the operation that describes
-recursivity or that forces ordering (e.g. execute this, then that,
-then that). And we can use it to describe recursive calls:</p>
+<p><code class="language-plaintext highlighter-rouge">Task</code>は<code class="language-plaintext highlighter-rouge">flatMap</code>を持っており、これは単項演算の<code class="language-plaintext highlighter-rouge">bind</code>です。
+これは、<code class="language-plaintext highlighter-rouge">Task</code>や<code class="language-plaintext highlighter-rouge">Future</code>のように、再帰性や順序付けを記述する操作です。(例：これを実行してからあれを実行して、あれを実行する)
+そして、再帰的な呼び出しを記述するために使うことができます:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">fib</span><span class="o">(</span><span class="n">cycles</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">a</span><span class="k">:</span> <span class="kt">BigInt</span><span class="o">,</span> <span class="n">b</span><span class="k">:</span> <span class="kt">BigInt</span><span class="o">)</span><span class="k">:</span> <span class="kt">Task</span><span class="o">[</span><span class="kt">BigInt</span><span class="o">]</span> <span class="k">=</span>
   <span class="nv">Task</span><span class="o">.</span><span class="py">eval</span><span class="o">(</span><span class="n">cycles</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">).</span><span class="py">flatMap</span> <span class="o">{</span>
@@ -1108,13 +1105,12 @@ then that). And we can use it to describe recursive calls:</p>
   <span class="o">}</span>
 </code></pre></div></div>
 
-<p>Again, this is stack safe and uses a constant amount of memory, so no
-<code class="language-plaintext highlighter-rouge">@tailrec</code> annotation is needed or wanted. And it has lazy behavior,
-as nothing will get triggered until <code class="language-plaintext highlighter-rouge">runToFuture</code> happens.</p>
+<p>繰り返しになりますが、これはスタックセーフで一定量のメモリを使用します。<code class="language-plaintext highlighter-rouge">tailrec</code>アノテーションは必要ありません。
+また、これは遅延な動作をします。なぜなら、<code class="language-plaintext highlighter-rouge">runToFuture</code>が発生するまで、何もトリガーされないからです。</p>
 
-<p>But we can also have <strong>mutually tail-recursive calls</strong>, w00t!</p>
+<p>でも、<strong>mutually tail-recursive calls</strong>を持つこともできます。w00t!</p>
 
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Mutual Tail Recursion, ftw!!!</span>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// 相互末尾再帰, 最高!!!</span>
 <span class="o">{</span>
   <span class="k">def</span> <span class="nf">odd</span><span class="o">(</span><span class="n">n</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span><span class="k">:</span> <span class="kt">Task</span><span class="o">[</span><span class="kt">Boolean</span><span class="o">]</span> <span class="k">=</span>
     <span class="nv">Task</span><span class="o">.</span><span class="py">eval</span><span class="o">(</span><span class="n">n</span> <span class="o">==</span> <span class="mi">0</span><span class="o">).</span><span class="py">flatMap</span> <span class="o">{</span>
@@ -1132,27 +1128,24 @@ as nothing will get triggered until <code class="language-plaintext highlighter-
 <span class="o">}</span>
 </code></pre></div></div>
 
-<p>Again, this is stack safe and uses a constant amount of memory.  And
-best of all, because of the
-<a href="/docs/3x/execution/scheduler.html#execution-model">execution model</a>, by
-default these loops won’t block the current thread forever, preferring to
-execute things in batches.</p>
+<p>繰り返しになりますが、これはスタックセーフで一定量のメモリを使用します。
+そして何よりも <a href="/docs/3x/execution/scheduler.html#execution-model">実行モデル</a> のおかげで、デフォルトではこれらのループは現在のスレッドを永遠にブロックしません。バッチでの実行を好みます。</p>
     
-      <h3 id="parallelism-catsparallel">
+      <h3 id="並列性-catsparallel">
         
         
-          Parallelism (cats.Parallel) <a href="#parallelism-catsparallel" class="anchor">#</a>
+          並列性 (cats.Parallel) <a href="#並列性-catsparallel" class="anchor">#</a>
         
         
       </h3>
 
-<p>When using <code class="language-plaintext highlighter-rouge">flatMap</code>, we often end up with this:</p>
+<p><code class="language-plaintext highlighter-rouge">flatMap</code>を使っていると、よくこんなことになってしまいます:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">locationTask</span><span class="k">:</span> <span class="kt">Task</span><span class="o">[</span><span class="kt">String</span><span class="o">]</span> <span class="k">=</span> <span class="nv">Task</span><span class="o">.</span><span class="py">eval</span><span class="o">(???)</span>
 <span class="k">val</span> <span class="nv">phoneTask</span><span class="k">:</span> <span class="kt">Task</span><span class="o">[</span><span class="kt">String</span><span class="o">]</span> <span class="k">=</span> <span class="nv">Task</span><span class="o">.</span><span class="py">eval</span><span class="o">(???)</span>
 <span class="k">val</span> <span class="nv">addressTask</span><span class="k">:</span> <span class="kt">Task</span><span class="o">[</span><span class="kt">String</span><span class="o">]</span> <span class="k">=</span> <span class="nv">Task</span><span class="o">.</span><span class="py">eval</span><span class="o">(???)</span>
 
-<span class="c1">// Ordered operations based on flatMap ...</span>
+<span class="c1">// flatMapに基づく順序付け操作 ...</span>
 <span class="k">val</span> <span class="nv">aggregate</span> <span class="k">=</span> <span class="k">for</span> <span class="o">{</span>
   <span class="n">location</span> <span class="k">&lt;-</span> <span class="n">locationTask</span>
   <span class="n">phone</span> <span class="k">&lt;-</span> <span class="n">phoneTask</span>
@@ -1162,30 +1155,25 @@ execute things in batches.</p>
 <span class="o">}</span>
 </code></pre></div></div>
 
-<p>For one the problem here is that these operations are executed in
-order. This also happens with Scala’s standard <code class="language-plaintext highlighter-rouge">Future</code>, being
-sometimes an unwanted effect, but because <code class="language-plaintext highlighter-rouge">Task</code> is lazily evaluated,
-this effect is even more pronounced with <code class="language-plaintext highlighter-rouge">Task</code>.</p>
+<p>ここでの問題は、これらの操作が順番に実行されるということです。
+これはScalaの標準的な<code class="language-plaintext highlighter-rouge">Future</code>でも起こることで、時には望ましくない効果をもたらすこともありますが，<code class="language-plaintext highlighter-rouge">Task</code>は遅延的に評価されるためこの効果は<code class="language-plaintext highlighter-rouge">Task</code>でより顕著になります。</p>
 
-<p>But <code class="language-plaintext highlighter-rouge">Task</code> also has a
-<a href="https://typelevel.org/cats/typeclasses/parallel.html">cats.Parallel</a>
-implementation, being able to trigger evaluation of multiple
-tasks in parallel and hence it has utilities, such
-as <code class="language-plaintext highlighter-rouge">parZip2</code>, <code class="language-plaintext highlighter-rouge">parZip3</code>, up until <code class="language-plaintext highlighter-rouge">parZip6</code> (at the moment of writing). 
-The example above could be written as:</p>
+<p>しかし、<code class="language-plaintext highlighter-rouge">Task</code>には<a href="https://typelevel.org/cats/typeclasses/parallel.html">cats.Parallel</a> という実装があり、複数のタスクの評価を並行して行うことができます。
+そのため、<code class="language-plaintext highlighter-rouge">parZip2</code>、<code class="language-plaintext highlighter-rouge">parZip3</code>などのユーティリティがあり、現在では<code class="language-plaintext highlighter-rouge">parZip6</code>まで実装されています。
+上記の例は，次のように書くことができます:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">locationTask</span><span class="k">:</span> <span class="kt">Task</span><span class="o">[</span><span class="kt">String</span><span class="o">]</span> <span class="k">=</span> <span class="nv">Task</span><span class="o">.</span><span class="py">eval</span><span class="o">(???)</span>
 <span class="k">val</span> <span class="nv">phoneTask</span><span class="k">:</span> <span class="kt">Task</span><span class="o">[</span><span class="kt">String</span><span class="o">]</span> <span class="k">=</span> <span class="nv">Task</span><span class="o">.</span><span class="py">eval</span><span class="o">(???)</span>
 <span class="k">val</span> <span class="nv">addressTask</span><span class="k">:</span> <span class="kt">Task</span><span class="o">[</span><span class="kt">String</span><span class="o">]</span> <span class="k">=</span> <span class="nv">Task</span><span class="o">.</span><span class="py">eval</span><span class="o">(???)</span>
 
-<span class="c1">// Potentially executed in parallel</span>
+<span class="c1">// 並行して実行される可能性がある </span>
 <span class="k">val</span> <span class="nv">aggregate</span> <span class="k">=</span>
   <span class="nv">Task</span><span class="o">.</span><span class="py">parZip3</span><span class="o">(</span><span class="n">locationTask</span><span class="o">,</span> <span class="n">phoneTask</span><span class="o">,</span> <span class="n">addressTask</span><span class="o">).</span><span class="py">map</span> <span class="o">{</span>
     <span class="nf">case</span> <span class="o">(</span><span class="n">location</span><span class="o">,</span> <span class="n">phone</span><span class="o">,</span> <span class="n">address</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="s">"Gotcha!"</span>
   <span class="o">}</span>
 </code></pre></div></div>
 
-<p>In order to avoid boxing into tuples, you can also use <code class="language-plaintext highlighter-rouge">parMap2</code>,
+<p>タプルへのボックス化を避けるために、<code class="language-plaintext highlighter-rouge">parMap2</code>を使うこともできます。<br />
 <code class="language-plaintext highlighter-rouge">parMap3</code> … <code class="language-plaintext highlighter-rouge">parMap6</code>:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">Task</span><span class="o">.</span><span class="py">parMap3</span><span class="o">(</span><span class="n">locationTask</span><span class="o">,</span> <span class="n">phoneTask</span><span class="o">,</span> <span class="n">addressTask</span><span class="o">)</span> <span class="o">{</span>
@@ -1193,7 +1181,7 @@ The example above could be written as:</p>
 <span class="o">}</span>
 </code></pre></div></div>
 
-<p>And you can use Cats’ syntax for <code class="language-plaintext highlighter-rouge">parMapN</code>:</p>
+<p>また、<code class="language-plaintext highlighter-rouge">parMapN</code>にはCatsの構文が使えます:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">cats.syntax.all._</span>
 
@@ -1202,21 +1190,19 @@ The example above could be written as:</p>
 <span class="o">}</span>
 </code></pre></div></div>
 
-<p>Also see the documentation for
-<a href="https://typelevel.org/cats/typeclasses/parallel.html">cats.Parallel</a>.</p>
+<p><a href="https://typelevel.org/cats/typeclasses/parallel.html">cats.Parallel</a> も併せてご覧ください。</p>
     
-      <h3 id="gather-results-from-a-seq-of-tasks">
+      <h3 id="タスクのシーケンスから結果を収集する">
         
         
-          Gather results from a Seq of Tasks <a href="#gather-results-from-a-seq-of-tasks" class="anchor">#</a>
+          タスクのシーケンスから結果を収集する <a href="#タスクのシーケンスから結果を収集する" class="anchor">#</a>
         
         
       </h3>
 
-<p><code class="language-plaintext highlighter-rouge">Task.sequence</code>, takes a <code class="language-plaintext highlighter-rouge">Seq[Task[A]]</code> and returns a <code class="language-plaintext highlighter-rouge">Task[Seq[A]]</code>,
-thus transforming any sequence of tasks into a task with a sequence of
-results and with ordered effects and results. This means that the
-tasks WILL NOT execute in parallel.</p>
+<p><code class="language-plaintext highlighter-rouge">Task.sequence</code>は、<code class="language-plaintext highlighter-rouge">Seq[Task[A]]</code>を取り、<code class="language-plaintext highlighter-rouge">Task[Seq[A]]</code>を返します。
+このようにして、任意のタスクのシーケンスを順序付けられた効果と結果を持つタスクに変換します。
+つまり、タスクが並列に実行されることはありません。</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">ta</span> <span class="k">=</span> <span class="nc">Task</span> <span class="o">{</span> <span class="nf">println</span><span class="o">(</span><span class="s">"Effect1"</span><span class="o">);</span> <span class="mi">1</span> <span class="o">}</span>
 <span class="k">val</span> <span class="nv">tb</span> <span class="k">=</span> <span class="nc">Task</span> <span class="o">{</span> <span class="nf">println</span><span class="o">(</span><span class="s">"Effect2"</span><span class="o">);</span> <span class="mi">2</span> <span class="o">}</span>
@@ -1224,24 +1210,19 @@ tasks WILL NOT execute in parallel.</p>
 <span class="k">val</span> <span class="nv">list</span><span class="k">:</span> <span class="kt">Task</span><span class="o">[</span><span class="kt">Seq</span><span class="o">[</span><span class="kt">Int</span><span class="o">]]</span> <span class="k">=</span>
   <span class="nv">Task</span><span class="o">.</span><span class="py">sequence</span><span class="o">(</span><span class="nc">Seq</span><span class="o">(</span><span class="n">ta</span><span class="o">,</span> <span class="n">tb</span><span class="o">))</span>
 
-<span class="c1">// We always get this ordering:</span>
+<span class="c1">// 常に同じ順番になります:</span>
 <span class="nv">list</span><span class="o">.</span><span class="py">runToFuture</span><span class="o">.</span><span class="py">foreach</span><span class="o">(</span><span class="n">println</span><span class="o">)</span>
 <span class="c1">//=&gt; Effect1</span>
 <span class="c1">//=&gt; Effect2</span>
 <span class="c1">//=&gt; List(1, 2)</span>
 </code></pre></div></div>
 
-<p>The results are ordered in the order of the initial sequence, so that
-means in the example above we are guaranteed in the result to first
-get the result of <code class="language-plaintext highlighter-rouge">ta</code> (the first task) and then the result of <code class="language-plaintext highlighter-rouge">tb</code>
-(the second task). The execution itself is also ordered, so <code class="language-plaintext highlighter-rouge">ta</code>
-executes and completes before <code class="language-plaintext highlighter-rouge">tb</code>.</p>
+<p>結果は初期シーケンスの順に並んでいるので、上の例ではまず<code class="language-plaintext highlighter-rouge">ta</code>(最初のタスク)の結果が得られ、次に<code class="language-plaintext highlighter-rouge">tb</code>(2番目のタスク)の結果が得られることが保証されていることになります。
+また、実行自体にも順序があるので、<code class="language-plaintext highlighter-rouge">ta</code>が<code class="language-plaintext highlighter-rouge">tb</code>の前に実行され、完了します。</p>
 
-<p><code class="language-plaintext highlighter-rouge">Task.parSequence</code>, similar to <code class="language-plaintext highlighter-rouge">Parallel.parSequence</code>, is the nondeterministic
-version of <code class="language-plaintext highlighter-rouge">Task.sequence</code>.  It also takes a <code class="language-plaintext highlighter-rouge">Seq[Task[A]]</code> and
-returns a <code class="language-plaintext highlighter-rouge">Task[Seq[A]]</code>, thus transforming any sequence of tasks into
-a task with a sequence of ordered results. But the effects are not
-ordered, meaning that there’s potential for parallel execution:</p>
+<p><code class="language-plaintext highlighter-rouge">Task.parSequence</code>は、<code class="language-plaintext highlighter-rouge">Parallel.parSequence</code>と同様に、<code class="language-plaintext highlighter-rouge">Task.sequence</code>の非決定論的なバージョンです。
+<code class="language-plaintext highlighter-rouge">Seq[Task[A]]</code>を受け取り、<code class="language-plaintext highlighter-rouge">Task[Seq[A]]</code>を返すことで、タスクのシーケンスを順番に並べられた結果のシーケンスを持つタスクに変換します。
+しかし、結果は順序付けられていません。つまり、並列実行の可能性があるということです。</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">scala.concurrent.duration._</span>
 
@@ -1268,9 +1249,8 @@ ordered, meaning that there’s potential for parallel execution:</p>
 <span class="c1">//=&gt; List(1, 2)</span>
 </code></pre></div></div>
 
-<p><code class="language-plaintext highlighter-rouge">Task.parSequenceUnordered</code> is like <code class="language-plaintext highlighter-rouge">parSequence</code>, except that you don’t get
-ordering for results or effects. The result is thus highly nondeterministic,
-but yields better performance than <code class="language-plaintext highlighter-rouge">parSequence</code>:</p>
+<p><code class="language-plaintext highlighter-rouge">Task.parSequenceUnordered</code>は<code class="language-plaintext highlighter-rouge">parSequence</code>と似ていますが、結果や効果の順序付けができないことを除けば，<code class="language-plaintext highlighter-rouge">parSequence</code>と同じです。
+そのため結果は非常に非決定的ですが、<code class="language-plaintext highlighter-rouge">parSequence</code>よりも良いパフォーマンスが得られます。</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">scala.concurrent.duration._</span>
 
@@ -1298,11 +1278,11 @@ but yields better performance than <code class="language-plaintext highlighter-r
 <span class="c1">//=&gt; Seq(1,2)</span>
 </code></pre></div></div>
 
-<p><code class="language-plaintext highlighter-rouge">Task.traverse</code>, takes a <code class="language-plaintext highlighter-rouge">Seq[A]</code>, <code class="language-plaintext highlighter-rouge">f: A =&gt; Task[B]</code> and returns a <code class="language-plaintext highlighter-rouge">Task[Seq[B]]</code>.
-This is similar to <code class="language-plaintext highlighter-rouge">Task.sequence</code> but it uses <code class="language-plaintext highlighter-rouge">f</code> to generate each <code class="language-plaintext highlighter-rouge">Task</code>.</p>
+<p><code class="language-plaintext highlighter-rouge">Task.traverse</code>は、<code class="language-plaintext highlighter-rouge">Seq[A]</code>, <code class="language-plaintext highlighter-rouge">f: A =&gt; Task[B]</code>を受け取り、<code class="language-plaintext highlighter-rouge">Task[Seq[B]]</code>を返します。
+これは<code class="language-plaintext highlighter-rouge">Task.sequence</code>と似ていますが、<code class="language-plaintext highlighter-rouge">f</code>を使ってそれぞれの<code class="language-plaintext highlighter-rouge">Task</code>を生成します。</p>
 
-<p>All <code class="language-plaintext highlighter-rouge">Task.sequence</code> semantics hold meaning the effects are ordered and the tasks
-WILL NOT execute in parallel.</p>
+<p>すべての<code class="language-plaintext highlighter-rouge">Task.sequence</code>セマンティクスは、効果が順序付けられていることを意味し、Taskは
+並行して実行されることはありません。</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">task</span><span class="o">(</span><span class="n">i</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">=</span> <span class="nc">Task</span> <span class="o">{</span> <span class="nf">println</span><span class="o">(</span><span class="s">"Effect"</span> <span class="o">+</span> <span class="n">i</span><span class="o">);</span> <span class="n">i</span> <span class="o">}</span>
 
@@ -1316,11 +1296,10 @@ WILL NOT execute in parallel.</p>
 <span class="c1">//=&gt; List(1, 2)</span>
 </code></pre></div></div>
 
-<p><code class="language-plaintext highlighter-rouge">Task.parTraverse</code>, similar to <code class="language-plaintext highlighter-rouge">Parallel.parTraverse</code>, is the nondeterministic
-version of <code class="language-plaintext highlighter-rouge">Task.traverse</code>.  It also takes a <code class="language-plaintext highlighter-rouge">Seq[A]</code>, <code class="language-plaintext highlighter-rouge">f: A =&gt; Task[B]</code> and
-returns a <code class="language-plaintext highlighter-rouge">Task[Seq[B]]</code>. It applies <code class="language-plaintext highlighter-rouge">f</code> to each element in the sequence transforming it
-into <code class="language-plaintext highlighter-rouge">Task</code> and then collecting results. The order in the output sequence is preserved, but 
-the effects are not ordered, meaning that there’s potential for parallel execution:</p>
+<p><code class="language-plaintext highlighter-rouge">Task.parTraverse</code>は、<code class="language-plaintext highlighter-rouge">Parallel.parTraverse</code>と同様に<code class="language-plaintext highlighter-rouge">Task.traverse</code>の非決定論的バージョンです。
+これもまた、<code class="language-plaintext highlighter-rouge">Seq[A]</code>, <code class="language-plaintext highlighter-rouge">f: A =&gt; Task[B]</code>を受け取り<code class="language-plaintext highlighter-rouge">Task[Seq[B]]</code>を返します。
+シーケンスの各要素に<code class="language-plaintext highlighter-rouge">f</code>を適用して、それを<code class="language-plaintext highlighter-rouge">Task</code>に変換し、結果を収集します。
+出力シーケンスの順序は維持されますが、並列実行の可能性があるということです。</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">scala.concurrent.duration._</span>
 
@@ -1340,13 +1319,12 @@ the effects are not ordered, meaning that there’s potential for parallel execu
 <span class="c1">//=&gt; List(1, 2)</span>
 </code></pre></div></div>
 
-<p>Similar to <code class="language-plaintext highlighter-rouge">parSequenceUnordered</code> there is also unordered version of <code class="language-plaintext highlighter-rouge">parTraverse</code> called <code class="language-plaintext highlighter-rouge">parTraverseUnordered</code>.</p>
+<p><code class="language-plaintext highlighter-rouge">parSequenceUnordered</code>と同様に、<code class="language-plaintext highlighter-rouge">parTraverse</code>の順序を保証しないバージョンである<code class="language-plaintext highlighter-rouge">parTraverseUnordered</code>もあります。</p>
 
-<p><strong>NOTE:</strong> If you have the possibility, prefer explicitly using <code class="language-plaintext highlighter-rouge">Task</code> operators instead of
-those provided by Cats syntax. Their default implementations are derived from other
-methods and are often much slower than optimized <code class="language-plaintext highlighter-rouge">Task</code> versions.</p>
+<p><strong>注:</strong> 可能であればCats構文で提供されているメソッドではなく、明示的に<code class="language-plaintext highlighter-rouge">Task</code>のメソッドを使用することをお勧めします。
+Catsのデフォルト実装は他のメソッドから派生したもので、最適化された<code class="language-plaintext highlighter-rouge">Task</code>バージョンよりもはるかに遅いことがよくあります。</p>
 
-<p>Refer to the table below to see corresponding methods:</p>
+<p>以下に対応表を示します:</p>
 
 <table>
   <thead>
