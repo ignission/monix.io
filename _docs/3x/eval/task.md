@@ -770,15 +770,12 @@ def fib(cycles: Int, a: BigInt, b: BigInt): Task[BigInt] = {
 }
 ```
 
-And now there are already differences. This is lazy, as the N-th
-Fibonacci number won't get calculated until we `runToFuture`. The
-`@tailrec` annotation is also not needed, as this is stack (and heap)
-safe.
+そして今、すでに違いがあります。N番目のフィボナッチ数は、`runToFuture`するまで計算されないので、これは遅延です。
+またこれはスタック(とヒープ)セーフなので、`@tailrec`アノテーションも必要ありません。
 
-`Task` has `flatMap`, which is the monadic `bind` operation, that for
-things like `Task` and `Future` is the operation that describes
-recursivity or that forces ordering (e.g. execute this, then that,
-then that). And we can use it to describe recursive calls:
+`Task`は`flatMap`を持っており、これは単項演算の`bind`です。
+これは、`Task`や`Future`のように、再帰性や順序付けを記述する操作です。(例：これを実行してからあれを実行して、あれを実行する)
+そして、再帰的な呼び出しを記述するために使うことができます:
 
 ```scala mdoc:silent:nest
 def fib(cycles: Int, a: BigInt, b: BigInt): Task[BigInt] =
@@ -790,14 +787,13 @@ def fib(cycles: Int, a: BigInt, b: BigInt): Task[BigInt] =
   }
 ```
 
-Again, this is stack safe and uses a constant amount of memory, so no
-`@tailrec` annotation is needed or wanted. And it has lazy behavior,
-as nothing will get triggered until `runToFuture` happens.
+繰り返しになりますが、これはスタックセーフで一定量のメモリを使用します。`tailrec`アノテーションは必要ありません。
+また、これは遅延な動作をします。なぜなら、`runToFuture`が発生するまで、何もトリガーされないからです。
 
-But we can also have **mutually tail-recursive calls**, w00t!
+でも、**mutually tail-recursive calls**を持つこともできます。w00t!
 
 ```scala mdoc:silent:nest
-// Mutual Tail Recursion, ftw!!!
+// 相互末尾再帰, 最高!!!
 {
   def odd(n: Int): Task[Boolean] =
     Task.eval(n == 0).flatMap {
@@ -815,22 +811,19 @@ But we can also have **mutually tail-recursive calls**, w00t!
 }
 ```
 
-Again, this is stack safe and uses a constant amount of memory.  And
-best of all, because of the
-[execution model](../execution/scheduler.md#execution-model), by
-default these loops won't block the current thread forever, preferring to
-execute things in batches.
+繰り返しになりますが、これはスタックセーフで一定量のメモリを使用します。
+そして何よりも [実行モデル](../execution/scheduler.md#execution-model) のおかげで、デフォルトではこれらのループは現在のスレッドを永遠にブロックしません。バッチでの実行を好みます。
 
-### Parallelism (cats.Parallel)
+### 並列性 (cats.Parallel)
 
-When using `flatMap`, we often end up with this:
+`flatMap`を使っていると、よくこんなことになってしまいます:
 
 ```scala mdoc:silent:nest
 val locationTask: Task[String] = Task.eval(???)
 val phoneTask: Task[String] = Task.eval(???)
 val addressTask: Task[String] = Task.eval(???)
 
-// Ordered operations based on flatMap ...
+// flatMapに基づく順序付け操作 ...
 val aggregate = for {
   location <- locationTask
   phone <- phoneTask
@@ -840,31 +833,26 @@ val aggregate = for {
 }
 ```
 
-For one the problem here is that these operations are executed in
-order. This also happens with Scala's standard `Future`, being
-sometimes an unwanted effect, but because `Task` is lazily evaluated,
-this effect is even more pronounced with `Task`.
+ここでの問題は、これらの操作が順番に実行されるということです。
+これはScalaの標準的な`Future`でも起こることで、時には望ましくない効果をもたらすこともありますが，`Task`は遅延的に評価されるためこの効果は`Task`でより顕著になります。
 
-But `Task` also has a
-[cats.Parallel](https://typelevel.org/cats/typeclasses/parallel.html)
-implementation, being able to trigger evaluation of multiple
-tasks in parallel and hence it has utilities, such
-as `parZip2`, `parZip3`, up until `parZip6` (at the moment of writing). 
-The example above could be written as:
+しかし、`Task`には[cats.Parallel](https://typelevel.org/cats/typeclasses/parallel.html) という実装があり、複数のタスクの評価を並行して行うことができます。
+そのため、`parZip2`、`parZip3`などのユーティリティがあり、現在では`parZip6`まで実装されています。
+上記の例は，次のように書くことができます:
 
 ```scala mdoc:silent:nest
 val locationTask: Task[String] = Task.eval(???)
 val phoneTask: Task[String] = Task.eval(???)
 val addressTask: Task[String] = Task.eval(???)
 
-// Potentially executed in parallel
+// 並行して実行される可能性がある 
 val aggregate =
   Task.parZip3(locationTask, phoneTask, addressTask).map {
     case (location, phone, address) => "Gotcha!"
   }
 ```
 
-In order to avoid boxing into tuples, you can also use `parMap2`,
+タプルへのボックス化を避けるために、`parMap2`を使うこともできます。  
 `parMap3` ... `parMap6`:
 
 ```scala mdoc:silent:nest
@@ -873,7 +861,7 @@ Task.parMap3(locationTask, phoneTask, addressTask) {
 }
 ```
 
-And you can use Cats' syntax for `parMapN`:
+また、`parMapN`にはCatsの構文が使えます:
 
 ```scala mdoc:silent:nest
 import cats.syntax.all._
@@ -883,15 +871,13 @@ import cats.syntax.all._
 }
 ```
 
-Also see the documentation for
-[cats.Parallel](https://typelevel.org/cats/typeclasses/parallel.html).
+[cats.Parallel](https://typelevel.org/cats/typeclasses/parallel.html) も併せてご覧ください。
 
-### Gather results from a Seq of Tasks
+### タスクのシーケンスから結果を収集する
 
-`Task.sequence`, takes a `Seq[Task[A]]` and returns a `Task[Seq[A]]`,
-thus transforming any sequence of tasks into a task with a sequence of
-results and with ordered effects and results. This means that the
-tasks WILL NOT execute in parallel.
+`Task.sequence`は、`Seq[Task[A]]`を取り、`Task[Seq[A]]`を返します。
+このようにして、任意のタスクのシーケンスを順序付けられた効果と結果を持つタスクに変換します。
+つまり、タスクが並列に実行されることはありません。
 
 ```scala mdoc:silent:nest
 val ta = Task { println("Effect1"); 1 }
@@ -900,24 +886,19 @@ val tb = Task { println("Effect2"); 2 }
 val list: Task[Seq[Int]] =
   Task.sequence(Seq(ta, tb))
 
-// We always get this ordering:
+// 常に同じ順番になります:
 list.runToFuture.foreach(println)
 //=> Effect1
 //=> Effect2
 //=> List(1, 2)
 ```
 
-The results are ordered in the order of the initial sequence, so that
-means in the example above we are guaranteed in the result to first
-get the result of `ta` (the first task) and then the result of `tb`
-(the second task). The execution itself is also ordered, so `ta`
-executes and completes before `tb`.
+結果は初期シーケンスの順に並んでいるので、上の例ではまず`ta`(最初のタスク)の結果が得られ、次に`tb`(2番目のタスク)の結果が得られることが保証されていることになります。
+また、実行自体にも順序があるので、`ta`が`tb`の前に実行され、完了します。
 
-`Task.parSequence`, similar to `Parallel.parSequence`, is the nondeterministic
-version of `Task.sequence`.  It also takes a `Seq[Task[A]]` and
-returns a `Task[Seq[A]]`, thus transforming any sequence of tasks into
-a task with a sequence of ordered results. But the effects are not
-ordered, meaning that there's potential for parallel execution:
+`Task.parSequence`は、`Parallel.parSequence`と同様に、`Task.sequence`の非決定論的なバージョンです。
+`Seq[Task[A]]`を受け取り、`Task[Seq[A]]`を返すことで、タスクのシーケンスを順番に並べられた結果のシーケンスを持つタスクに変換します。
+しかし、結果は順序付けられていません。つまり、並列実行の可能性があるということです。
 
 ```scala mdoc:silent:nest
 import scala.concurrent.duration._
@@ -945,9 +926,8 @@ list.runToFuture.foreach(println)
 //=> List(1, 2)
 ```
 
-`Task.parSequenceUnordered` is like `parSequence`, except that you don't get
-ordering for results or effects. The result is thus highly nondeterministic,
-but yields better performance than `parSequence`:
+`Task.parSequenceUnordered`は`parSequence`と似ていますが、結果や効果の順序付けができないことを除けば，`parSequence`と同じです。
+そのため結果は非常に非決定的ですが、`parSequence`よりも良いパフォーマンスが得られます。
 
 ```scala mdoc:silent:nest
 import scala.concurrent.duration._
@@ -976,11 +956,11 @@ list.runToFuture.foreach(println)
 //=> Seq(1,2)
 ```
 
-`Task.traverse`, takes a `Seq[A]`, `f: A => Task[B]` and returns a `Task[Seq[B]]`.
-This is similar to `Task.sequence` but it uses `f` to generate each `Task`.
+`Task.traverse`は、`Seq[A]`, `f: A => Task[B]`を受け取り、`Task[Seq[B]]`を返します。
+これは`Task.sequence`と似ていますが、`f`を使ってそれぞれの`Task`を生成します。
 
-All `Task.sequence` semantics hold meaning the effects are ordered and the tasks
-WILL NOT execute in parallel.
+すべての`Task.sequence`セマンティクスは、効果が順序付けられていることを意味し、Taskは
+並行して実行されることはありません。
 
 ```scala mdoc:silent:nest
 def task(i: Int) = Task { println("Effect" + i); i }
@@ -995,11 +975,10 @@ list.runToFuture.foreach(println)
 //=> List(1, 2)
 ```
 
-`Task.parTraverse`, similar to `Parallel.parTraverse`, is the nondeterministic
-version of `Task.traverse`.  It also takes a `Seq[A]`, `f: A => Task[B]` and
-returns a `Task[Seq[B]]`. It applies `f` to each element in the sequence transforming it
-into `Task` and then collecting results. The order in the output sequence is preserved, but 
-the effects are not ordered, meaning that there's potential for parallel execution:
+`Task.parTraverse`は、`Parallel.parTraverse`と同様に`Task.traverse`の非決定論的バージョンです。
+これもまた、`Seq[A]`, `f: A => Task[B]`を受け取り`Task[Seq[B]]`を返します。
+シーケンスの各要素に`f`を適用して、それを`Task`に変換し、結果を収集します。
+出力シーケンスの順序は維持されますが、並列実行の可能性があるということです。
 
 ```scala mdoc:silent:nest
 import scala.concurrent.duration._
@@ -1020,14 +999,12 @@ list.runToFuture.foreach(println)
 //=> List(1, 2)
 ```
 
-Similar to `parSequenceUnordered` there is also unordered version of `parTraverse` called `parTraverseUnordered`.
+`parSequenceUnordered`と同様に、`parTraverse`の順序を保証しないバージョンである`parTraverseUnordered`もあります。
 
-**NOTE:** If you have the possibility, prefer explicitly using `Task` operators instead of
-those provided by Cats syntax. Their default implementations are derived from other
-methods and are often much slower than optimized `Task` versions.
+**注:** 可能であればCats構文で提供されているメソッドではなく、明示的に`Task`のメソッドを使用することをお勧めします。
+Catsのデフォルト実装は他のメソッドから派生したもので、最適化された`Task`バージョンよりもはるかに遅いことがよくあります。
 
-Refer to the table below to see corresponding methods:
-
+以下に対応表を示します:
 
 |        Monix        |            Cats            |
 |:-------------------:|:--------------------------:|
