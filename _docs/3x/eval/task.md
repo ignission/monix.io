@@ -1014,9 +1014,8 @@ Catsのデフォルト実装は他のメソッドから派生したもので、�
 |    Task.parTraverse |    Parallel.parTraverse    |
 
 ### Race
-
-The `racePair` operation will choose the winner between two
-`Task` that will potentially run in parallel:
+ 
+`racePair`オペレーションは、2つの`Task`を並行して実行し、勝者を選びます。
 
 ```scala mdoc:silent:nest
 import scala.concurrent.duration._
@@ -1036,16 +1035,12 @@ val race = Task.racePair(ta, tb).runToFuture.foreach {
 }
 ```
 
-The result generated will be an `Either` of tuples, giving you the
-opportunity to do something with the other task that lost the race.
-You can cancel it, or you can use its result somehow, or you can
-simply ignore it, your choice depending on use-case.
+生成される結果はタプルの`Either`で、レースに負けたもう一方のタスクに何かをする機会を与えてくれます。
+そのタスクをキャンセルするか、その結果を何らかの形で利用するか、あるいは単に無視するかをユースケースによって選択できます。
 
 ### Race Many
 
-The `raceMany` operation takes as input a list of tasks,
-and upon execution will generate the result of the first task
-that completes and wins the race:
+`raceMany`オペレーションは、タスクのリストを入力として受け取ります。実行すると、最初のタスクが完了してレースに勝利した結果を生成します:
 
 ```scala mdoc:silent:nest
 import scala.concurrent.duration._
@@ -1060,14 +1055,10 @@ val tb = Task(10).delayExecution(1.second)
 }
 ```
 
-It is similar to Scala's
-[Future.firstCompletedOf](http://www.scala-lang.org/api/current/index.html#scala.concurrent.Future$@firstCompletedOf[T](futures:TraversableOnce[scala.concurrent.Future[T]])(implicitexecutor:scala.concurrent.ExecutionContext):scala.concurrent.Future[T])
-operation, except that it operates on `Task` and upon execution it has
-a better model, as when a task wins the race the other tasks get
-immediately canceled.
+これは、Scalaの[Future.firstCompletedOf](http://www.scala-lang.org/api/current/index.html#scala.concurrent.Future$@firstCompletedOf[T(futures:TraversableOnce[scala.concurrent.Future[T])(implicitexecutor:scala.concurrent.ExecutionContext):scala.concurrent.Future[T]) に似ています。
+`Task`を操作することを除いて、タスクがレースに勝つと他のタスクが即座にキャンセルされるので、より良いモデルになっています。
 
-If you want to ignore errors and wait for the first successful result you could 
-combine it with `onErrorHandleWith` and `timeout`:
+エラーを無視して、最初に成功した結果を待ちたい場合には`onErrorHandleWith`や`timeout`と組み合わせることができます:
 
 ```scala mdoc:silent:reset
 import monix.eval.Task
@@ -1084,14 +1075,13 @@ val tasks: List[Task[Int]] = List(task1, task2, task3)
 
 val result: Task[Int] = Task.raceMany(tasks.map(_.onErrorHandleWith(_ => Task.never))).timeout(timeout)
 
-println(result.runSyncUnsafe()) // will print 10
+println(result.runSyncUnsafe()) // 10をプリントする
 ```
-It will turn any failed tasks into non-terminating.
+これにより、失敗したタスクは非終了になります。
 
-Timeout is necessary in case all tasks fail. In the example above, if `task1` also fails we will have to wait for the timeout
-to expire despite knowing that we won't get any successful result.
+タイムアウトは、すべてのタスクが失敗した場合に必要です。上の例では、`task1`も失敗した場合、成功した結果が得られないことがわかっているにもかかわらず、タイムアウトが切れるのを待たなければなりません。
 
-We can optimize it by doing second `race `that uses `Semaphore`:
+これを最適化するには、`Semaphore`を使った2回目の`race`を行う必要があります:
 
 ```scala mdoc:silent:reset
 import cats.effect.concurrent.Semaphore
@@ -1115,7 +1105,7 @@ val result: Task[Either[Unit, Int]] = semaphore.flatMap { sem =>
   )
 }
 
-println(result.runSyncUnsafe()) // will finish and print after 3 seconds
+println(result.runSyncUnsafe()) // 3秒後にプリントして終了する
 ```
 
 ```scala mdoc:reset:invisible
@@ -1125,13 +1115,11 @@ import monix.execution.schedulers.TestScheduler
 implicit val global = TestScheduler()
 ```
 
-### Delay Execution
+### 遅延実行
 
-`Task.delayExecution`, as the name says, delays the execution of a
-given task by the given timespan.
+`Task.delayExecution`は、その名のとおり与えられたタスクの実行を与えられた時間だけ遅らせます。
 
-In this example we are delaying the execution of the source by 3
-seconds:
+この例では、`source`の実行を3秒遅らせています:
 
 ```scala mdoc:silent:nest
 import scala.concurrent.duration._
@@ -1145,9 +1133,8 @@ val delayed = source.delayExecution(3.seconds)
 delayed.runToFuture.foreach(println)
 ```
 
-Or, instead of a delay we might want to use another `Task` as the
-signal for starting the execution, so the following example is
-equivalent to the one above:
+また、遅延の代わりに、別の `Task` を実行開始のシグナルとして使用したい場合もあります。  
+上の例と同じです:
 
 ```scala mdoc:silent:nest
 val source = Task {
@@ -1160,10 +1147,10 @@ Task.unit
   .flatMap(_ => source)
 ```
 
-### Delay Signaling of the Result
+### 結果の遅延シグナリング
 
-`Task.delayResult` delays the signaling of the result, but not the
-execution of the `Task`. Consider this example:
+`Task.delayResult`は結果の通知を遅らせますが、`Task`の実行は遅らせません。  
+この例を考えてみましょう:
 
 ```scala mdoc:silent:nest
 import scala.concurrent.duration._
@@ -1182,14 +1169,12 @@ val delayed = {
 delayed.runToFuture.foreach(println)
 ```
 
-Here, you'll see the "side-effect happening after only 1 second, but
-the signaling of the result will happen after another 5 seconds.
+ここでは、`副作用はわずか1秒後に起こるが、結果の通知はさらに5秒後に起こる`ことがわかります。
 
-### Restart Until Predicate is True
+### 述語が真になるまで再起動
 
-The `Task` being a spec, we can restart it at will.
-`Task.restartUntil(predicate)` does just that, executing the source
-over and over again, until the given predicate is true:
+`Task`は仕様なので、自由に再起動することができます。  
+`Task.restartUntil(predicate)`はまさに、述語が`true`になるまで何度も再実行します:
 
 ```scala mdoc:silent:nest
 import scala.util.Random
@@ -1207,12 +1192,10 @@ randomEven.runToFuture.foreach(println)
 //=> 1053678416
 ```
 
-### Clean-up Resources on Finish
+### 終了時にリソースをのクリーンアップ
 
-`Task.doOnFinish` executes the supplied
-`Option[Throwable] => Task[Unit]` function when the source finishes,
-being meant for cleaning up resources or executing
-some scheduled side-effect:
+`Task.doOnFinish`は、`Option[Throwable] => Task[Unit]`が終了したときに提供された関数を実行します。  
+これはリソースのクリーンアップや予定されている副作用の実行を意味します:
 
 ```scala mdoc:silent:nest
 val task = Task(1)
@@ -1231,15 +1214,12 @@ withFinishCb.runToFuture.foreach(println)
 //=> 1
 ```
 
-### Convert to Reactive Publisher
+### リアクティブ・パブリッシャーへの変換
 
-Did you know that Monix integrates with the
-[Reactive Streams](http://www.reactive-streams.org/)
-specification?
+Monixが[Reactive Streams](http://www.reactive-streams.org/) の仕様に統合されていることをご存知ですか？
 
-Well, `Task` can be seen as an `org.reactivestreams.Publisher` that
-emits exactly one event upon subscription and then stops. And we can
-convert any `Task` to such a publisher directly:
+さて、`Task`は`org.reactivestreams.Publisher`として見ることができます。サブスクリプション時に正確に1つのイベントを発行し、その後停止します。  
+そして、私たちは任意の`Task`を直接そのようなパブリッシャーに変換することができます:
 
 ```scala mdoc:silent:nest
 val task = Task.eval(Random.nextInt())
@@ -1248,9 +1228,8 @@ val publisher: org.reactivestreams.Publisher[Int] =
   task.toReactivePublisher
 ```
 
-This is meant for interoperability purposes with other libraries, but
-if you're inclined to use it directly, it's a little lower level,
-but doable:
+これは他のライブラリとの相互運用を目的としていますが、直接使いたい場合は少し低レベルです。  
+でも可能です:
 
 ```scala mdoc:silent:nest
 import org.reactivestreams._
@@ -1269,41 +1248,32 @@ publisher.subscribe(new Subscriber[Int] {
     System.err.println(s"ERROR: $ex")
 })
 
-// Will print:
+// 次のようにプリントされる:
 //=> OnNext: -228329246
 //=> OnComplete
 ```
 
-Awesome, isn't it?
+凄いでしょう？
 
 (◑‿◐)
 
-## Error Handling
+## エラーハンドリング
 
-`Task` takes error handling very seriously. You see, there's this famous
-[thought experiment](https://en.wikipedia.org/wiki/If_a_tree_falls_in_a_forest)
-regarding *observation*:
+`Task`はエラー処理を非常に重要視しています。
+ほら、*観察* についてこんな有名な話があるじゃないですか。  
+[思考実験](https://en.wikipedia.org/wiki/If_a_tree_falls_in_a_forest) :
 
-> "*If a tree falls in a forest and no one is around to hear it, does
-> it make a sound?*"
+> "*森の中で木が倒れても、周りにそれを聞く人がいなければ
+> その木は音を発しますか？*"
 
-Now this applies very well to error handling, because if an error is
-triggered by an asynchronous process and there's nobody to hear it, no
-handler to catch it and log it or recover from it, then it didn't
-happen. And what you'll get is
-[nondeterminism](https://en.wikipedia.org/wiki/Nondeterministic_algorithm)
-without any hints of the error involved.
+これは、エラー処理に非常によく当てはまります。非同期プロセスでエラーが発生しても、それを聞く人がいなければキャッチしてログに残したり、回復したりすることはしません。
+そして得られるのは[非決定論](https://en.wikipedia.org/wiki/Nondeterministic_algorithm) のようなもので、エラーのヒントはありません。
 
-This is why Monix will always attempt to catch and signal or at least
-log any errors that happen. In case signaling is not possible for
-whatever reason (like the callback was already called), then the
-logging is done by means of the provided `Scheduler.reportFailure`,
-which defaults to `System.err`, unless you provide something more
-concrete, like going through SLF4J or whatever.
+Monixは常に発生したエラーをキャッチしてシグナルを送るか、少なくともログに記録します。
+何らかの理由でシグナリングができない場合(コールバックがすでに呼び出されているなど)、ロギングは提供されている`Scheduler.reportFailure`を使って行われます。
+SLF4Jを経由するなど、より具体的なものを提供しない限りはデフォルトで`System.err`となります。
 
-Even though Monix expects for the arguments given to its operators,
-like `flatMap`, to be pure or at least protected from errors, it still
-catches errors, signaling them on `runAsync`:
+Monixはそのメソッドに与えられる引数が`flatMap`のように純粋であるか、少なくともエラーから保護されていることを期待し、エラーをキャッチして`runAsync`でシグナルを送ります:
 
 ```scala mdoc:silent:nest
 val task = Task(Random.nextInt()).flatMap {
@@ -1320,24 +1290,22 @@ task.runAsync(r => println(r))
 //=> Left(java.lang.IllegalStateException: 834919637)
 ```
 
-In case an error happens in the callback provided to `runAsync`, then
-Monix can no longer signal an `onError`, because it would be a
-contract violation (see [Callback](../execution/callback.md)). But it still
-logs the error:
+`runAsync`に提供されたコールバックでエラーが発生した場合、以下のようになります。
+Monixはもはや`onError`のシグナルを出すことはできません。契約違反になるからです([Callback](../execution/callback.md)を参照)。  
+しかし、それはまだエラーを記録します:
 
 ```scala mdoc:silent:nest
 import scala.concurrent.duration._
 
-// Ensures asynchronous execution, just to show
-// that the action doesn't happen on the
-// current thread
+// 非同期の実行を保証
+// 現在のスレッドではアクションは起こらない
 val task = Task(2).delayExecution(1.second)
 
 task.runAsync { r =>
   throw new IllegalStateException(r.toString)
 }
 
-// After 1 second, this will log the whole stack trace:
+// 1秒後に、スタックトレース全体をログに記録します:
 //=> java.lang.IllegalStateException: Right(2)
 //=>    ...
 //=>	at monix.eval.Task$$anon$3.onSuccess(Task.scala:78)
@@ -1348,11 +1316,8 @@ task.runAsync { r =>
 //=>    ....
 ```
 
-Similarly, when using `Task.create`, Monix attempts to catch any
-uncaught errors, but because we did not know what happened in the
-provided callback, we cannot signal the error as it would be a
-contract violation (see [Callback](../execution/callback.md)), but Monix does
-log the error:
+同様に`Task.create`を使用した場合、Monixはエラーを捕捉しようとしますが、提供されたコールバックで何が起こったのかわからなかったため契約違反となるエラーを通知できません。([Callback](../execution/callback.md)を参照)  
+Monixは以下のようにエラーを記録します:
 
 ```scala mdoc:silent:nest
 val task = Task.create[Int] { (scheduler, callback) =>
@@ -1361,7 +1326,7 @@ val task = Task.create[Int] { (scheduler, callback) =>
 
 val future = task.runToFuture
 
-// Logs the following to System.err:
+// 以下の内容をSystem.errに記録します:
 //=> java.lang.IllegalStateException: FTW!
 //=>    ...
 //=> 	at monix.eval.Task$$anonfun$create$1.apply(Task.scala:576)
@@ -1369,22 +1334,17 @@ val future = task.runToFuture
 //=> 	at monix.eval.Task$AsyncStateRunnable.run(Task.scala:1429)
 //=>    ...
 
-// The Future NEVER COMPLETES, OOPS!
+// このFutureは絶対に完了しません。うわー!
 future.onComplete(r => println(r))
 ```
 
-**WARNING:** In this case the consumer side never gets a completion
-signal. The moral of the story is: even if Monix makes a best effort
-to do the right thing, you should protect your freaking code against
-unwanted exceptions, especially in `Task.create`!!!
+**警告:** この場合、コンシューマーはシグナルを受け取ることはありません。
+この話の教訓は、Monixが正しいことをするために最善の努力をしたとしても、特に`Task.create`では不要な例外からコードを保護すべきです!!!
 
-### Overriding the Error Logging
+### エラーロギングのオーバーライド
 
-The article on [Scheduler](../execution/scheduler.md) has recipes
-for building your own `Scheduler` instances, with your own logic. But
-here's a quick snippet for building such a `Scheduler` that could do
-logging by means of a library, such as the standard
-[SLF4J](http://www.slf4j.org/):
+[Scheduler](../execution/scheduler.md) の記事には、独自のロジックで独自の`Scheduler`インスタンスを構築するためのレシピが掲載されています。
+しかしここでは、そのような`Scheduler`を構築するための簡単なスニペットを紹介します。標準的な[SLF4J](http://www.slf4j.org/) のようなライブラリを使って、ロギングを行います:
 
 ```scala mdoc:silent:nest
 import monix.execution.Scheduler
@@ -1401,10 +1361,9 @@ implicit val global: Scheduler =
   Scheduler(default, reporter)
 ```
 
-### Trigger a Timeout
+### タイムアウトのトリガー
 
-In case a `Task` is too slow to execute, we can cancel it and trigger
-a `TimeoutException` using `Task.timeout`:
+`Task`の実行に時間がかかりすぎた場合には、`Task.timeout`を使って`TimeoutException`を発生させることができます:
 
 ```scala mdoc:silent:nest
 import scala.concurrent.duration._
@@ -1413,17 +1372,16 @@ import scala.concurrent.TimeoutException
 val source =
   Task("Hello!").delayExecution(10.seconds)
 
-// Triggers error if the source does not
-// complete in 3 seconds after runAsync
+// runAsyncの後、3秒以内にソースが完了しないとエラーを起こす
 val timedOut = source.timeout(3.seconds)
 
 timedOut.runAsync(r => println(r))
 //=> Failure(TimeoutException)
 ```
 
-On timeout the source gets canceled (if it's a source that supports
-cancelation). And instead of an error, we can timeout to a `fallback`
-task. The following example is equivalent to the above one:
+タイムアウトになると、ソースはキャンセルされます(キャンセルをサポートしているソースの場合)。
+また、エラーの代わりに`fallback`タスクにタイムアウトすることもできます。
+次の例は、上の例と同じです:
 
 ```scala mdoc:silent:nest
 import scala.concurrent.duration._
@@ -1441,11 +1399,9 @@ timedOut.runAsync(r => println(r))
 //=> Left(TimeoutException)
 ```
 
-### Recovering from Error
+### エラーからの回復
 
-`Task.onErrorHandleWith` is an operation that takes a function mapping
-possible exceptions to a desired fallback outcome, so we could do
-this:
+`Task.onErrorHandleWith`は、起こりうる例外を望ましいフォールバックの結果に例外をマッピングする関数を取る操作です:
 
 ```scala mdoc:silent:nest
 import scala.concurrent.duration._
@@ -1459,10 +1415,10 @@ val source = {
 
 val recovered = source.onErrorHandleWith {
   case _: TimeoutException =>
-    // Oh, we know about timeouts, recover it
+    // あぁ、タイムアウトのことを知ってるから回復するよ
     Task.now("Recovered!")
   case other =>
-    // We have no idea what happened, raise error!
+    // 何が起こったのかわからないから、エラーを上げる！
     Task.raiseError(other)
 }
 
@@ -1470,13 +1426,12 @@ recovered.runToFuture.foreach(println)
 //=> Recovered!
 ```
 
-There's also `Task.onErrorRecoverWith` that takes a partial function
-instead, so we can omit the "other" branch:
+部分関数を受け取る`Task.onErrorRecoverWith`もあるので、`other`の部分を省略することができます:
 
 ```scala mdoc:silent:nest
 val recovered = source.onErrorRecoverWith {
   case _: TimeoutException =>
-    // Oh, we know about timeouts, recover it
+    // あぁ、タイムアウトのことを知ってるから回復するよ
     Task.now("Recovered!")
 }
 
@@ -1484,36 +1439,33 @@ recovered.runToFuture.foreach(println)
 //=> Recovered!
 ```
 
-`Task.onErrorHandleWith` and `Task.onErrorRecoverWith` are the
-equivalent of `flatMap`, only for errors. In case we know or can
-evaluate a fallback result eagerly, we could use the shortcut
-operation `Task.onErrorHandle` like:
+`Task.onErrorHandleWith`と`Task.onErrorRecoverWith`は、エラーの場合に限り`flatMap`に相当します。
+フォールバックの結果を遅延で評価できることがわかっている場合には、ショートカットの操作`Task.onErrorHandle`を使用することができます:
 
 ```scala mdoc:silent:nest
 val recovered = source.onErrorHandle {
   case _: TimeoutException =>
-    // Oh, we know about timeouts, recover it
+    // あぁ、タイムアウトのことを知ってるから回復するよ
     "Recovered!"
   case other =>
-    throw other // Rethrowing
+    throw other // 再スロー
 }
 ```
 
-Or the partial function version with `onErrorRecover`:
+または、`onErrorRecover`を使った部分関数バージョン:
 
 ```scala mdoc:silent:nest
 val recovered = source.onErrorRecover {
   case _: TimeoutException =>
-    // Oh, we know about timeouts, recover it
+    // あぁ、タイムアウトのことを知ってるから回復するよ
     "Recovered!"
 }
 ```
 
-### Restart On Error
+### エラーのときに再起動する
 
-The `Task` type, being just a specification, it can usually restart
-whatever process is supposed to deliver the final result and we can
-restart the source on error, for how many times are needed:
+`タスク`タイプは単なる仕様であるため、通常は最終的な結果を得るためのあらゆるプロセスを再起動することができます。
+また、エラーが発生した場合には必要な回数だけソースを再起動することができます:
 
 ```scala mdoc:silent:nest
 import scala.util.Random
@@ -1525,12 +1477,12 @@ val source = Task(Random.nextInt()).flatMap {
     Task.raiseError(new IllegalStateException(other.toString))
 }
 
-// Will retry 4 times for a random even number,
-// or fail if the maxRetries is reached!
+// 偶数のランダムな数字に対して4回リトライします
+// またはmaxRetriesに達した場合は失敗します！
 val randomEven = source.onErrorRestart(maxRetries = 4)
 ```
 
-We can also restart with a given predicate:
+また、与えられた述語で再開することもできます:
 
 ```scala mdoc:silent:nest
 import scala.util.Random
@@ -1542,16 +1494,15 @@ val source = Task(Random.nextInt()).flatMap {
     Task.raiseError(new IllegalStateException(other.toString))
 }
 
-// Will keep retrying for as long as the source fails
-// with an IllegalStateException
+// IllegalStateExceptionが発生する限り、再試行を続けます
 val randomEven = source.onErrorRestartIf {
   case _: IllegalStateException => true
   case _ => false
 }
 ```
 
-Or we could implement our own retry with exponential backoff, because
-it's cool doing so:
+あるいは、指数関数的なバックオフによる独自のリトライを実装することもできます。  
+そうするのがクールだからです:
 
 ```scala mdoc:silent:nest
 def retryBackoff[A](source: Task[A],
@@ -1560,7 +1511,7 @@ def retryBackoff[A](source: Task[A],
   source.onErrorHandleWith {
     case ex: Exception =>
       if (maxRetries > 0)
-        // Recursive call, it's OK as Monix is stack-safe
+        // 再帰呼び出しも、Monixはスタック・セーフなので問題なし
         retryBackoff(source, maxRetries-1, firstDelay*2)
           .delayExecution(firstDelay)
       else
@@ -1569,11 +1520,10 @@ def retryBackoff[A](source: Task[A],
 }
 ```
 
-### Expose Errors
+### エラーを公開する
 
-The `Task` monadic context is hiding errors that happen, much like
-Scala's `Try` or `Future`. But sometimes we want to expose those
-errors such that we can recover more efficiently:
+`Task`のモナディックコンテキストは、Scalaの`Try`や`Future`のように発生したエラーを隠します。
+しかし、時にはこれらのエラーを公開してより効率的に回復できるようにしたいこともあります:
 
 ```scala mdoc:silent:nest
 import scala.util.{Try, Success, Failure}
@@ -1582,7 +1532,7 @@ val source = Task.raiseError[Int](new IllegalStateException)
 val materialized: Task[Try[Int]] =
   source.materialize
 
-// Now we can flatMap over both success and failure:
+// これで成功も失敗もフラットにできるようになりました:
 val recovered = materialized.flatMap {
   case Success(value) => Task.now(value)
   case Failure(_) => Task.now(0)
@@ -1592,25 +1542,24 @@ recovered.runToFuture.foreach(println)
 //=> 0
 ```
 
-There's also the reverse of materialize, which is `Task.dematerialize`:
+また、マテリアライズの逆もあり`Task.dematerialize`となります:
 
 ```scala mdoc:silent:nest
 import scala.util.Try
 
 val source = Task.raiseError[Int](new IllegalStateException)
 
-// Exposing errors
+// エラーを公開する
 val materialized = source.materialize
 // materialize: Task[Try[Int]] = ???
 
-// Hiding errors again
+// 再びエラーを隠す
 val dematerialized = materialized.dematerialize
 // dematerialized: Task[Int] = ???
 ```
 
-We can also convert any `Task` into a `Task[Throwable]` that will
-expose any errors that happen and will also terminate with an
-`NoSuchElementException` in case the source completes with success:
+また、任意の`Task`を`Task[Throwable]`に変換することもできます。
+起こったエラーを公開したり、ソースが成功して完了した場合は`NoSuchElementException`で終了します:
 
 ```scala mdoc:silent:nest
 val source = Task.raiseError[Int](new IllegalStateException)
