@@ -30,15 +30,15 @@
   <meta content="Task &amp;mdash; Monix" property="og:title">
   <meta content="A data type for controlling possibly lazy &amp;amp; asynchronous computations, useful for controlling side-effects, avoiding nondeterminism and callback-hell." property="og:description">
   <meta content="https://monix.io/docs/current/eval/task.html" property="og:url">
-  <meta content="2021-07-04T14:07:24+00:00" property="article:modified_time">
+  <meta content="2021-07-05T13:15:38+00:00" property="article:modified_time">
     
   <meta content="article" property="og:type">
   <meta property="og:image" content="https://monix.io/public/images/monix-logo.png" />
   <meta property="og:image:secure_url" content="https://monix.io/public/images/monix-logo.png" />
   <!-- CSS -->
-  <link rel="stylesheet" href="/public/css/all.css?1625407785205409574">
+  <link rel="stylesheet" href="/public/css/all.css?1625491081636864760">
   <!--[if lt IE 9]>
-  <link rel="stylesheet" href="/public/css/forkme.ie.css?1625407785205409574">
+  <link rel="stylesheet" href="/public/css/forkme.ie.css?1625491081636864760">
   <![endif]-->
 
   <link rel="stylesheet" href="//fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
@@ -109,8 +109,8 @@
 
   
   <time class="post-date" itemprop="dateModified"
-    datetime="2021-07-04">
-    <b>ページの更新日:</b> 04 Jul 2021
+    datetime="2021-07-05">
+    <b>ページの更新日:</b> 05 Jul 2021
   </time>
   <nav role="navigation" id="type-info">
     <a href="/api/current/monix/eval/Task.html">APIドキュメント</a>
@@ -175,20 +175,20 @@
       <li><a href="#タスクのシーケンスから結果を収集する">タスクのシーケンスから結果を収集する</a></li>
       <li><a href="#race">Race</a></li>
       <li><a href="#race-many">Race Many</a></li>
-      <li><a href="#delay-execution">Delay Execution</a></li>
-      <li><a href="#delay-signaling-of-the-result">Delay Signaling of the Result</a></li>
-      <li><a href="#restart-until-predicate-is-true">Restart Until Predicate is True</a></li>
-      <li><a href="#clean-up-resources-on-finish">Clean-up Resources on Finish</a></li>
-      <li><a href="#convert-to-reactive-publisher">Convert to Reactive Publisher</a></li>
+      <li><a href="#遅延実行">遅延実行</a></li>
+      <li><a href="#結果の遅延シグナリング">結果の遅延シグナリング</a></li>
+      <li><a href="#述語が真になるまで再起動">述語が真になるまで再起動</a></li>
+      <li><a href="#終了時にリソースをのクリーンアップ">終了時にリソースをのクリーンアップ</a></li>
+      <li><a href="#リアクティブパブリッシャーへの変換">リアクティブ・パブリッシャーへの変換</a></li>
     </ul>
   </li>
-  <li><a href="#error-handling">Error Handling</a>
+  <li><a href="#エラーハンドリング">エラーハンドリング</a>
     <ul>
-      <li><a href="#overriding-the-error-logging">Overriding the Error Logging</a></li>
-      <li><a href="#trigger-a-timeout">Trigger a Timeout</a></li>
-      <li><a href="#recovering-from-error">Recovering from Error</a></li>
-      <li><a href="#restart-on-error">Restart On Error</a></li>
-      <li><a href="#expose-errors">Expose Errors</a></li>
+      <li><a href="#エラーロギングのオーバーライド">エラーロギングのオーバーライド</a></li>
+      <li><a href="#タイムアウトのトリガー">タイムアウトのトリガー</a></li>
+      <li><a href="#エラーからの回復">エラーからの回復</a></li>
+      <li><a href="#エラーのときに再起動する">エラーのときに再起動する</a></li>
+      <li><a href="#エラーを公開する">エラーを公開する</a></li>
     </ul>
   </li>
 </ul>
@@ -1361,8 +1361,7 @@ Catsのデフォルト実装は他のメソッドから派生したもので、�
         
       </h3>
 
-<p>The <code class="language-plaintext highlighter-rouge">racePair</code> operation will choose the winner between two
-<code class="language-plaintext highlighter-rouge">Task</code> that will potentially run in parallel:</p>
+<p><code class="language-plaintext highlighter-rouge">racePair</code>オペレーションは、2つの<code class="language-plaintext highlighter-rouge">Task</code>を並行して実行し、勝者を選びます。</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">scala.concurrent.duration._</span>
 
@@ -1381,10 +1380,8 @@ Catsのデフォルト実装は他のメソッドから派生したもので、�
 <span class="o">}</span>
 </code></pre></div></div>
 
-<p>The result generated will be an <code class="language-plaintext highlighter-rouge">Either</code> of tuples, giving you the
-opportunity to do something with the other task that lost the race.
-You can cancel it, or you can use its result somehow, or you can
-simply ignore it, your choice depending on use-case.</p>
+<p>生成される結果はタプルの<code class="language-plaintext highlighter-rouge">Either</code>で、レースに負けたもう一方のタスクに何かをする機会を与えてくれます。
+そのタスクをキャンセルするか、その結果を何らかの形で利用するか、あるいは単に無視するかをユースケースによって選択できます。</p>
     
       <h3 id="race-many">
         
@@ -1394,9 +1391,7 @@ simply ignore it, your choice depending on use-case.</p>
         
       </h3>
 
-<p>The <code class="language-plaintext highlighter-rouge">raceMany</code> operation takes as input a list of tasks,
-and upon execution will generate the result of the first task
-that completes and wins the race:</p>
+<p><code class="language-plaintext highlighter-rouge">raceMany</code>オペレーションは、タスクのリストを入力として受け取ります。実行すると、最初のタスクが完了してレースに勝利した結果を生成します:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">scala.concurrent.duration._</span>
 
@@ -1410,14 +1405,10 @@ that completes and wins the race:</p>
 <span class="o">}</span>
 </code></pre></div></div>
 
-<p>It is similar to Scala’s
-<a href="http://www.scala-lang.org/api/current/index.html#scala.concurrent.Future$@firstCompletedOf[T](futures:TraversableOnce[scala.concurrent.Future[T]])(implicitexecutor:scala.concurrent.ExecutionContext):scala.concurrent.Future[T]">Future.firstCompletedOf</a>
-operation, except that it operates on <code class="language-plaintext highlighter-rouge">Task</code> and upon execution it has
-a better model, as when a task wins the race the other tasks get
-immediately canceled.</p>
+<p>これは、Scalaの<a href="http://www.scala-lang.org/api/current/index.html#scala.concurrent.Future$@firstCompletedOf[T(futures:TraversableOnce[scala.concurrent.Future[T])(implicitexecutor:scala.concurrent.ExecutionContext):scala.concurrent.Future[T]">Future.firstCompletedOf</a> に似ています。
+<code class="language-plaintext highlighter-rouge">Task</code>を操作することを除いて、タスクがレースに勝つと他のタスクが即座にキャンセルされるので、より良いモデルになっています。</p>
 
-<p>If you want to ignore errors and wait for the first successful result you could 
-combine it with <code class="language-plaintext highlighter-rouge">onErrorHandleWith</code> and <code class="language-plaintext highlighter-rouge">timeout</code>:</p>
+<p>エラーを無視して、最初に成功した結果を待ちたい場合には<code class="language-plaintext highlighter-rouge">onErrorHandleWith</code>や<code class="language-plaintext highlighter-rouge">timeout</code>と組み合わせることができます:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">monix.eval.Task</span>
 <span class="k">import</span> <span class="nn">monix.execution.Scheduler.Implicits.global</span>
@@ -1433,14 +1424,13 @@ combine it with <code class="language-plaintext highlighter-rouge">onErrorHandle
 
 <span class="k">val</span> <span class="nv">result</span><span class="k">:</span> <span class="kt">Task</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="nv">Task</span><span class="o">.</span><span class="py">raceMany</span><span class="o">(</span><span class="nv">tasks</span><span class="o">.</span><span class="py">map</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">onErrorHandleWith</span><span class="o">(</span><span class="k">_</span> <span class="k">=&gt;</span> <span class="nv">Task</span><span class="o">.</span><span class="py">never</span><span class="o">))).</span><span class="py">timeout</span><span class="o">(</span><span class="n">timeout</span><span class="o">)</span>
 
-<span class="nf">println</span><span class="o">(</span><span class="nv">result</span><span class="o">.</span><span class="py">runSyncUnsafe</span><span class="o">())</span> <span class="c1">// will print 10</span>
+<span class="nf">println</span><span class="o">(</span><span class="nv">result</span><span class="o">.</span><span class="py">runSyncUnsafe</span><span class="o">())</span> <span class="c1">// 10をプリントする</span>
 </code></pre></div></div>
-<p>It will turn any failed tasks into non-terminating.</p>
+<p>これにより、失敗したタスクは非終了になります。</p>
 
-<p>Timeout is necessary in case all tasks fail. In the example above, if <code class="language-plaintext highlighter-rouge">task1</code> also fails we will have to wait for the timeout
-to expire despite knowing that we won’t get any successful result.</p>
+<p>タイムアウトは、すべてのタスクが失敗した場合に必要です。上の例では、<code class="language-plaintext highlighter-rouge">task1</code>も失敗した場合、成功した結果が得られないことがわかっているにもかかわらず、タイムアウトが切れるのを待たなければなりません。</p>
 
-<p>We can optimize it by doing second <code class="language-plaintext highlighter-rouge">race </code>that uses <code class="language-plaintext highlighter-rouge">Semaphore</code>:</p>
+<p>これを最適化するには、<code class="language-plaintext highlighter-rouge">Semaphore</code>を使った2回目の<code class="language-plaintext highlighter-rouge">race</code>を行う必要があります:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">cats.effect.concurrent.Semaphore</span>
 <span class="k">import</span> <span class="nn">cats.syntax.apply._</span>
@@ -1463,22 +1453,20 @@ to expire despite knowing that we won’t get any successful result.</p>
   <span class="o">)</span>
 <span class="o">}</span>
 
-<span class="nf">println</span><span class="o">(</span><span class="nv">result</span><span class="o">.</span><span class="py">runSyncUnsafe</span><span class="o">())</span> <span class="c1">// will finish and print after 3 seconds</span>
+<span class="nf">println</span><span class="o">(</span><span class="nv">result</span><span class="o">.</span><span class="py">runSyncUnsafe</span><span class="o">())</span> <span class="c1">// 3秒後にプリントして終了する</span>
 </code></pre></div></div>
     
-      <h3 id="delay-execution">
+      <h3 id="遅延実行">
         
         
-          Delay Execution <a href="#delay-execution" class="anchor">#</a>
+          遅延実行 <a href="#遅延実行" class="anchor">#</a>
         
         
       </h3>
 
-<p><code class="language-plaintext highlighter-rouge">Task.delayExecution</code>, as the name says, delays the execution of a
-given task by the given timespan.</p>
+<p><code class="language-plaintext highlighter-rouge">Task.delayExecution</code>は、その名のとおり与えられたタスクの実行を与えられた時間だけ遅らせます。</p>
 
-<p>In this example we are delaying the execution of the source by 3
-seconds:</p>
+<p>この例では、<code class="language-plaintext highlighter-rouge">source</code>の実行を3秒遅らせています:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">scala.concurrent.duration._</span>
 
@@ -1491,9 +1479,8 @@ seconds:</p>
 <span class="nv">delayed</span><span class="o">.</span><span class="py">runToFuture</span><span class="o">.</span><span class="py">foreach</span><span class="o">(</span><span class="n">println</span><span class="o">)</span>
 </code></pre></div></div>
 
-<p>Or, instead of a delay we might want to use another <code class="language-plaintext highlighter-rouge">Task</code> as the
-signal for starting the execution, so the following example is
-equivalent to the one above:</p>
+<p>また、遅延の代わりに、別の <code class="language-plaintext highlighter-rouge">Task</code> を実行開始のシグナルとして使用したい場合もあります。<br />
+上の例と同じです:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">source</span> <span class="k">=</span> <span class="nc">Task</span> <span class="o">{</span>
   <span class="nf">println</span><span class="o">(</span><span class="s">"Side-effect!"</span><span class="o">)</span>
@@ -1505,16 +1492,16 @@ equivalent to the one above:</p>
   <span class="o">.</span><span class="py">flatMap</span><span class="o">(</span><span class="k">_</span> <span class="k">=&gt;</span> <span class="n">source</span><span class="o">)</span>
 </code></pre></div></div>
     
-      <h3 id="delay-signaling-of-the-result">
+      <h3 id="結果の遅延シグナリング">
         
         
-          Delay Signaling of the Result <a href="#delay-signaling-of-the-result" class="anchor">#</a>
+          結果の遅延シグナリング <a href="#結果の遅延シグナリング" class="anchor">#</a>
         
         
       </h3>
 
-<p><code class="language-plaintext highlighter-rouge">Task.delayResult</code> delays the signaling of the result, but not the
-execution of the <code class="language-plaintext highlighter-rouge">Task</code>. Consider this example:</p>
+<p><code class="language-plaintext highlighter-rouge">Task.delayResult</code>は結果の通知を遅らせますが、<code class="language-plaintext highlighter-rouge">Task</code>の実行は遅らせません。<br />
+この例を考えてみましょう:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">scala.concurrent.duration._</span>
 
@@ -1532,20 +1519,18 @@ execution of the <code class="language-plaintext highlighter-rouge">Task</code>.
 <span class="nv">delayed</span><span class="o">.</span><span class="py">runToFuture</span><span class="o">.</span><span class="py">foreach</span><span class="o">(</span><span class="n">println</span><span class="o">)</span>
 </code></pre></div></div>
 
-<p>Here, you’ll see the “side-effect happening after only 1 second, but
-the signaling of the result will happen after another 5 seconds.</p>
+<p>ここでは、<code class="language-plaintext highlighter-rouge">副作用はわずか1秒後に起こるが、結果の通知はさらに5秒後に起こる</code>ことがわかります。</p>
     
-      <h3 id="restart-until-predicate-is-true">
+      <h3 id="述語が真になるまで再起動">
         
         
-          Restart Until Predicate is True <a href="#restart-until-predicate-is-true" class="anchor">#</a>
+          述語が真になるまで再起動 <a href="#述語が真になるまで再起動" class="anchor">#</a>
         
         
       </h3>
 
-<p>The <code class="language-plaintext highlighter-rouge">Task</code> being a spec, we can restart it at will.
-<code class="language-plaintext highlighter-rouge">Task.restartUntil(predicate)</code> does just that, executing the source
-over and over again, until the given predicate is true:</p>
+<p><code class="language-plaintext highlighter-rouge">Task</code>は仕様なので、自由に再起動することができます。<br />
+<code class="language-plaintext highlighter-rouge">Task.restartUntil(predicate)</code>はまさに、述語が<code class="language-plaintext highlighter-rouge">true</code>になるまで何度も再実行します:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">scala.util.Random</span>
 
@@ -1562,18 +1547,16 @@ over and over again, until the given predicate is true:</p>
 <span class="c1">//=&gt; 1053678416</span>
 </code></pre></div></div>
     
-      <h3 id="clean-up-resources-on-finish">
+      <h3 id="終了時にリソースをのクリーンアップ">
         
         
-          Clean-up Resources on Finish <a href="#clean-up-resources-on-finish" class="anchor">#</a>
+          終了時にリソースをのクリーンアップ <a href="#終了時にリソースをのクリーンアップ" class="anchor">#</a>
         
         
       </h3>
 
-<p><code class="language-plaintext highlighter-rouge">Task.doOnFinish</code> executes the supplied
-<code class="language-plaintext highlighter-rouge">Option[Throwable] =&gt; Task[Unit]</code> function when the source finishes,
-being meant for cleaning up resources or executing
-some scheduled side-effect:</p>
+<p><code class="language-plaintext highlighter-rouge">Task.doOnFinish</code>は、<code class="language-plaintext highlighter-rouge">Option[Throwable] =&gt; Task[Unit]</code>が終了したときに提供された関数を実行します。<br />
+これはリソースのクリーンアップや予定されている副作用の実行を意味します:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">task</span> <span class="k">=</span> <span class="nc">Task</span><span class="o">(</span><span class="mi">1</span><span class="o">)</span>
 
@@ -1591,21 +1574,18 @@ some scheduled side-effect:</p>
 <span class="c1">//=&gt; 1</span>
 </code></pre></div></div>
     
-      <h3 id="convert-to-reactive-publisher">
+      <h3 id="リアクティブパブリッシャーへの変換">
         
         
-          Convert to Reactive Publisher <a href="#convert-to-reactive-publisher" class="anchor">#</a>
+          リアクティブ・パブリッシャーへの変換 <a href="#リアクティブパブリッシャーへの変換" class="anchor">#</a>
         
         
       </h3>
 
-<p>Did you know that Monix integrates with the
-<a href="http://www.reactive-streams.org/">Reactive Streams</a>
-specification?</p>
+<p>Monixが<a href="http://www.reactive-streams.org/">Reactive Streams</a> の仕様に統合されていることをご存知ですか？</p>
 
-<p>Well, <code class="language-plaintext highlighter-rouge">Task</code> can be seen as an <code class="language-plaintext highlighter-rouge">org.reactivestreams.Publisher</code> that
-emits exactly one event upon subscription and then stops. And we can
-convert any <code class="language-plaintext highlighter-rouge">Task</code> to such a publisher directly:</p>
+<p>さて、<code class="language-plaintext highlighter-rouge">Task</code>は<code class="language-plaintext highlighter-rouge">org.reactivestreams.Publisher</code>として見ることができます。サブスクリプション時に正確に1つのイベントを発行し、その後停止します。<br />
+そして、私たちは任意の<code class="language-plaintext highlighter-rouge">Task</code>を直接そのようなパブリッシャーに変換することができます:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">task</span> <span class="k">=</span> <span class="nv">Task</span><span class="o">.</span><span class="py">eval</span><span class="o">(</span><span class="nv">Random</span><span class="o">.</span><span class="py">nextInt</span><span class="o">())</span>
 
@@ -1613,9 +1593,8 @@ convert any <code class="language-plaintext highlighter-rouge">Task</code> to su
   <span class="nv">task</span><span class="o">.</span><span class="py">toReactivePublisher</span>
 </code></pre></div></div>
 
-<p>This is meant for interoperability purposes with other libraries, but
-if you’re inclined to use it directly, it’s a little lower level,
-but doable:</p>
+<p>これは他のライブラリとの相互運用を目的としていますが、直接使いたい場合は少し低レベルです。<br />
+でも可能です:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">org.reactivestreams._</span>
 
@@ -1633,49 +1612,40 @@ but doable:</p>
     <span class="nv">System</span><span class="o">.</span><span class="py">err</span><span class="o">.</span><span class="py">println</span><span class="o">(</span><span class="n">s</span><span class="s">"ERROR: $ex"</span><span class="o">)</span>
 <span class="o">})</span>
 
-<span class="c1">// Will print:</span>
+<span class="c1">// 次のようにプリントされる:</span>
 <span class="c1">//=&gt; OnNext: -228329246</span>
 <span class="c1">//=&gt; OnComplete</span>
 </code></pre></div></div>
 
-<p>Awesome, isn’t it?</p>
+<p>凄いでしょう？</p>
 
 <p>(◑‿◐)</p>
     
-      <h2 id="error-handling">
+      <h2 id="エラーハンドリング">
         
         
-          Error Handling <a href="#error-handling" class="anchor">#</a>
+          エラーハンドリング <a href="#エラーハンドリング" class="anchor">#</a>
         
         
       </h2>
 
-<p><code class="language-plaintext highlighter-rouge">Task</code> takes error handling very seriously. You see, there’s this famous
-<a href="https://en.wikipedia.org/wiki/If_a_tree_falls_in_a_forest">thought experiment</a>
-regarding <em>observation</em>:</p>
+<p><code class="language-plaintext highlighter-rouge">Task</code>はエラー処理を非常に重要視しています。
+ほら、<em>観察</em> についてこんな有名な話があるじゃないですか。<br />
+<a href="https://en.wikipedia.org/wiki/If_a_tree_falls_in_a_forest">思考実験</a> :</p>
 
 <blockquote>
-  <p>“<em>If a tree falls in a forest and no one is around to hear it, does
-it make a sound?</em>”</p>
+  <p>“<em>森の中で木が倒れても、周りにそれを聞く人がいなければ
+その木は音を発しますか？</em>”</p>
 </blockquote>
 
-<p>Now this applies very well to error handling, because if an error is
-triggered by an asynchronous process and there’s nobody to hear it, no
-handler to catch it and log it or recover from it, then it didn’t
-happen. And what you’ll get is
-<a href="https://en.wikipedia.org/wiki/Nondeterministic_algorithm">nondeterminism</a>
-without any hints of the error involved.</p>
+<p>これは、エラー処理に非常によく当てはまります。非同期プロセスでエラーが発生しても、それを聞く人がいなければキャッチしてログに残したり、回復したりすることはしません。
+そして得られるのは<a href="https://en.wikipedia.org/wiki/Nondeterministic_algorithm">非決定論</a> のようなもので、エラーのヒントはありません。</p>
 
-<p>This is why Monix will always attempt to catch and signal or at least
-log any errors that happen. In case signaling is not possible for
-whatever reason (like the callback was already called), then the
-logging is done by means of the provided <code class="language-plaintext highlighter-rouge">Scheduler.reportFailure</code>,
-which defaults to <code class="language-plaintext highlighter-rouge">System.err</code>, unless you provide something more
-concrete, like going through SLF4J or whatever.</p>
+<p>Monixは常に発生したエラーをキャッチしてシグナルを送るか、少なくともログに記録します。
+何らかの理由でシグナリングができない場合(コールバックがすでに呼び出されているなど)、ロギングは提供されている<code class="language-plaintext highlighter-rouge">Scheduler.reportFailure</code>を使って行われます。
+SLF4Jを経由するなど、より具体的なものを提供しない限りはデフォルトで<code class="language-plaintext highlighter-rouge">System.err</code>となります。</p>
 
-<p>Even though Monix expects for the arguments given to its operators,
-like <code class="language-plaintext highlighter-rouge">flatMap</code>, to be pure or at least protected from errors, it still
-catches errors, signaling them on <code class="language-plaintext highlighter-rouge">runAsync</code>:</p>
+<p>Monixはそのメソッドに与えられる引数が<code class="language-plaintext highlighter-rouge">flatMap</code>のように純粋であるか、少なくともエラーから保護されていることを期待し、エラーをキャッチして<code class="language-plaintext highlighter-rouge">runAsync</code>でシグナルを送ります:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">task</span> <span class="k">=</span> <span class="nc">Task</span><span class="o">(</span><span class="nv">Random</span><span class="o">.</span><span class="py">nextInt</span><span class="o">()).</span><span class="py">flatMap</span> <span class="o">{</span>
   <span class="k">case</span> <span class="n">even</span> <span class="k">if</span> <span class="n">even</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">=&gt;</span>
@@ -1691,23 +1661,21 @@ catches errors, signaling them on <code class="language-plaintext highlighter-ro
 <span class="c1">//=&gt; Left(java.lang.IllegalStateException: 834919637)</span>
 </code></pre></div></div>
 
-<p>In case an error happens in the callback provided to <code class="language-plaintext highlighter-rouge">runAsync</code>, then
-Monix can no longer signal an <code class="language-plaintext highlighter-rouge">onError</code>, because it would be a
-contract violation (see <a href="/docs/current/execution/callback.html">Callback</a>). But it still
-logs the error:</p>
+<p><code class="language-plaintext highlighter-rouge">runAsync</code>に提供されたコールバックでエラーが発生した場合、以下のようになります。
+Monixはもはや<code class="language-plaintext highlighter-rouge">onError</code>のシグナルを出すことはできません。契約違反になるからです(<a href="/docs/current/execution/callback.html">Callback</a>を参照)。<br />
+しかし、それはまだエラーを記録します:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">scala.concurrent.duration._</span>
 
-<span class="c1">// Ensures asynchronous execution, just to show</span>
-<span class="c1">// that the action doesn't happen on the</span>
-<span class="c1">// current thread</span>
+<span class="c1">// 非同期の実行を保証</span>
+<span class="c1">// 現在のスレッドではアクションは起こらない</span>
 <span class="k">val</span> <span class="nv">task</span> <span class="k">=</span> <span class="nc">Task</span><span class="o">(</span><span class="mi">2</span><span class="o">).</span><span class="py">delayExecution</span><span class="o">(</span><span class="mf">1.</span><span class="n">second</span><span class="o">)</span>
 
 <span class="nv">task</span><span class="o">.</span><span class="py">runAsync</span> <span class="o">{</span> <span class="n">r</span> <span class="k">=&gt;</span>
   <span class="k">throw</span> <span class="k">new</span> <span class="nc">IllegalStateException</span><span class="o">(</span><span class="nv">r</span><span class="o">.</span><span class="py">toString</span><span class="o">)</span>
 <span class="o">}</span>
 
-<span class="c1">// After 1 second, this will log the whole stack trace:</span>
+<span class="c1">// 1秒後に、スタックトレース全体をログに記録します:</span>
 <span class="c1">//=&gt; java.lang.IllegalStateException: Right(2)</span>
 <span class="c1">//=&gt;    ...</span>
 <span class="c1">//=&gt;	at monix.eval.Task$$anon$3.onSuccess(Task.scala:78)</span>
@@ -1718,11 +1686,8 @@ logs the error:</p>
 <span class="c1">//=&gt;    ....</span>
 </code></pre></div></div>
 
-<p>Similarly, when using <code class="language-plaintext highlighter-rouge">Task.create</code>, Monix attempts to catch any
-uncaught errors, but because we did not know what happened in the
-provided callback, we cannot signal the error as it would be a
-contract violation (see <a href="/docs/current/execution/callback.html">Callback</a>), but Monix does
-log the error:</p>
+<p>同様に<code class="language-plaintext highlighter-rouge">Task.create</code>を使用した場合、Monixはエラーを捕捉しようとしますが、提供されたコールバックで何が起こったのかわからなかったため契約違反となるエラーを通知できません。(<a href="/docs/current/execution/callback.html">Callback</a>を参照)<br />
+Monixは以下のようにエラーを記録します:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">task</span> <span class="k">=</span> <span class="nv">Task</span><span class="o">.</span><span class="py">create</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span> <span class="o">{</span> <span class="o">(</span><span class="n">scheduler</span><span class="o">,</span> <span class="n">callback</span><span class="o">)</span> <span class="k">=&gt;</span>
   <span class="o">(</span><span class="k">throw</span> <span class="k">new</span> <span class="nc">IllegalStateException</span><span class="o">(</span><span class="s">"FTW!"</span><span class="o">))</span><span class="k">:</span> <span class="kt">Unit</span>
@@ -1730,7 +1695,7 @@ log the error:</p>
 
 <span class="k">val</span> <span class="nv">future</span> <span class="k">=</span> <span class="nv">task</span><span class="o">.</span><span class="py">runToFuture</span>
 
-<span class="c1">// Logs the following to System.err:</span>
+<span class="c1">// 以下の内容をSystem.errに記録します:</span>
 <span class="c1">//=&gt; java.lang.IllegalStateException: FTW!</span>
 <span class="c1">//=&gt;    ...</span>
 <span class="c1">//=&gt; 	at monix.eval.Task$$anonfun$create$1.apply(Task.scala:576)</span>
@@ -1738,28 +1703,23 @@ log the error:</p>
 <span class="c1">//=&gt; 	at monix.eval.Task$AsyncStateRunnable.run(Task.scala:1429)</span>
 <span class="c1">//=&gt;    ...</span>
 
-<span class="c1">// The Future NEVER COMPLETES, OOPS!</span>
+<span class="c1">// このFutureは絶対に完了しません。うわー!</span>
 <span class="nv">future</span><span class="o">.</span><span class="py">onComplete</span><span class="o">(</span><span class="n">r</span> <span class="k">=&gt;</span> <span class="nf">println</span><span class="o">(</span><span class="n">r</span><span class="o">))</span>
 </code></pre></div></div>
 
-<p><strong>WARNING:</strong> In this case the consumer side never gets a completion
-signal. The moral of the story is: even if Monix makes a best effort
-to do the right thing, you should protect your freaking code against
-unwanted exceptions, especially in <code class="language-plaintext highlighter-rouge">Task.create</code>!!!</p>
+<p><strong>警告:</strong> この場合、コンシューマーはシグナルを受け取ることはありません。
+この話の教訓は、Monixが正しいことをするために最善の努力をしたとしても、特に<code class="language-plaintext highlighter-rouge">Task.create</code>では不要な例外からコードを保護すべきです!!!</p>
     
-      <h3 id="overriding-the-error-logging">
+      <h3 id="エラーロギングのオーバーライド">
         
         
-          Overriding the Error Logging <a href="#overriding-the-error-logging" class="anchor">#</a>
+          エラーロギングのオーバーライド <a href="#エラーロギングのオーバーライド" class="anchor">#</a>
         
         
       </h3>
 
-<p>The article on <a href="/docs/current/execution/scheduler.html">Scheduler</a> has recipes
-for building your own <code class="language-plaintext highlighter-rouge">Scheduler</code> instances, with your own logic. But
-here’s a quick snippet for building such a <code class="language-plaintext highlighter-rouge">Scheduler</code> that could do
-logging by means of a library, such as the standard
-<a href="http://www.slf4j.org/">SLF4J</a>:</p>
+<p><a href="/docs/current/execution/scheduler.html">Scheduler</a> の記事には、独自のロジックで独自の<code class="language-plaintext highlighter-rouge">Scheduler</code>インスタンスを構築するためのレシピが掲載されています。
+しかしここでは、そのような<code class="language-plaintext highlighter-rouge">Scheduler</code>を構築するための簡単なスニペットを紹介します。標準的な<a href="http://www.slf4j.org/">SLF4J</a> のようなライブラリを使って、ロギングを行います:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">monix.execution.Scheduler</span>
 <span class="k">import</span> <span class="nn">monix.execution.Scheduler.</span><span class="o">{</span><span class="n">global</span> <span class="k">=&gt;</span> <span class="n">default</span><span class="o">}</span>
@@ -1775,16 +1735,15 @@ logging by means of a library, such as the standard
   <span class="nc">Scheduler</span><span class="o">(</span><span class="n">default</span><span class="o">,</span> <span class="n">reporter</span><span class="o">)</span>
 </code></pre></div></div>
     
-      <h3 id="trigger-a-timeout">
+      <h3 id="タイムアウトのトリガー">
         
         
-          Trigger a Timeout <a href="#trigger-a-timeout" class="anchor">#</a>
+          タイムアウトのトリガー <a href="#タイムアウトのトリガー" class="anchor">#</a>
         
         
       </h3>
 
-<p>In case a <code class="language-plaintext highlighter-rouge">Task</code> is too slow to execute, we can cancel it and trigger
-a <code class="language-plaintext highlighter-rouge">TimeoutException</code> using <code class="language-plaintext highlighter-rouge">Task.timeout</code>:</p>
+<p><code class="language-plaintext highlighter-rouge">Task</code>の実行に時間がかかりすぎた場合には、<code class="language-plaintext highlighter-rouge">Task.timeout</code>を使って<code class="language-plaintext highlighter-rouge">TimeoutException</code>を発生させることができます:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">scala.concurrent.duration._</span>
 <span class="k">import</span> <span class="nn">scala.concurrent.TimeoutException</span>
@@ -1792,17 +1751,16 @@ a <code class="language-plaintext highlighter-rouge">TimeoutException</code> usi
 <span class="k">val</span> <span class="nv">source</span> <span class="k">=</span>
   <span class="nc">Task</span><span class="o">(</span><span class="s">"Hello!"</span><span class="o">).</span><span class="py">delayExecution</span><span class="o">(</span><span class="mf">10.</span><span class="n">seconds</span><span class="o">)</span>
 
-<span class="c1">// Triggers error if the source does not</span>
-<span class="c1">// complete in 3 seconds after runAsync</span>
+<span class="c1">// runAsyncの後、3秒以内にソースが完了しないとエラーを起こす</span>
 <span class="k">val</span> <span class="nv">timedOut</span> <span class="k">=</span> <span class="nv">source</span><span class="o">.</span><span class="py">timeout</span><span class="o">(</span><span class="mf">3.</span><span class="n">seconds</span><span class="o">)</span>
 
 <span class="nv">timedOut</span><span class="o">.</span><span class="py">runAsync</span><span class="o">(</span><span class="n">r</span> <span class="k">=&gt;</span> <span class="nf">println</span><span class="o">(</span><span class="n">r</span><span class="o">))</span>
 <span class="c1">//=&gt; Failure(TimeoutException)</span>
 </code></pre></div></div>
 
-<p>On timeout the source gets canceled (if it’s a source that supports
-cancelation). And instead of an error, we can timeout to a <code class="language-plaintext highlighter-rouge">fallback</code>
-task. The following example is equivalent to the above one:</p>
+<p>タイムアウトになると、ソースはキャンセルされます(キャンセルをサポートしているソースの場合)。
+また、エラーの代わりに<code class="language-plaintext highlighter-rouge">fallback</code>タスクにタイムアウトすることもできます。
+次の例は、上の例と同じです:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">scala.concurrent.duration._</span>
 <span class="k">import</span> <span class="nn">scala.concurrent.TimeoutException</span>
@@ -1819,17 +1777,15 @@ task. The following example is equivalent to the above one:</p>
 <span class="c1">//=&gt; Left(TimeoutException)</span>
 </code></pre></div></div>
     
-      <h3 id="recovering-from-error">
+      <h3 id="エラーからの回復">
         
         
-          Recovering from Error <a href="#recovering-from-error" class="anchor">#</a>
+          エラーからの回復 <a href="#エラーからの回復" class="anchor">#</a>
         
         
       </h3>
 
-<p><code class="language-plaintext highlighter-rouge">Task.onErrorHandleWith</code> is an operation that takes a function mapping
-possible exceptions to a desired fallback outcome, so we could do
-this:</p>
+<p><code class="language-plaintext highlighter-rouge">Task.onErrorHandleWith</code>は、起こりうる例外を望ましいフォールバックの結果に例外をマッピングする関数を取る操作です:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">scala.concurrent.duration._</span>
 <span class="k">import</span> <span class="nn">scala.concurrent.TimeoutException</span>
@@ -1842,10 +1798,10 @@ this:</p>
 
 <span class="k">val</span> <span class="nv">recovered</span> <span class="k">=</span> <span class="nv">source</span><span class="o">.</span><span class="py">onErrorHandleWith</span> <span class="o">{</span>
   <span class="k">case</span> <span class="k">_:</span> <span class="kt">TimeoutException</span> <span class="o">=&gt;</span>
-    <span class="c1">// Oh, we know about timeouts, recover it</span>
+    <span class="c1">// あぁ、タイムアウトのことを知ってるから回復するよ</span>
     <span class="nv">Task</span><span class="o">.</span><span class="py">now</span><span class="o">(</span><span class="s">"Recovered!"</span><span class="o">)</span>
   <span class="k">case</span> <span class="n">other</span> <span class="k">=&gt;</span>
-    <span class="c1">// We have no idea what happened, raise error!</span>
+    <span class="c1">// 何が起こったのかわからないから、エラーを上げる！</span>
     <span class="nv">Task</span><span class="o">.</span><span class="py">raiseError</span><span class="o">(</span><span class="n">other</span><span class="o">)</span>
 <span class="o">}</span>
 
@@ -1853,12 +1809,11 @@ this:</p>
 <span class="c1">//=&gt; Recovered!</span>
 </code></pre></div></div>
 
-<p>There’s also <code class="language-plaintext highlighter-rouge">Task.onErrorRecoverWith</code> that takes a partial function
-instead, so we can omit the “other” branch:</p>
+<p>部分関数を受け取る<code class="language-plaintext highlighter-rouge">Task.onErrorRecoverWith</code>もあるので、<code class="language-plaintext highlighter-rouge">other</code>の部分を省略することができます:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">recovered</span> <span class="k">=</span> <span class="nv">source</span><span class="o">.</span><span class="py">onErrorRecoverWith</span> <span class="o">{</span>
   <span class="k">case</span> <span class="k">_:</span> <span class="kt">TimeoutException</span> <span class="o">=&gt;</span>
-    <span class="c1">// Oh, we know about timeouts, recover it</span>
+    <span class="c1">// あぁ、タイムアウトのことを知ってるから回復するよ</span>
     <span class="nv">Task</span><span class="o">.</span><span class="py">now</span><span class="o">(</span><span class="s">"Recovered!"</span><span class="o">)</span>
 <span class="o">}</span>
 
@@ -1866,40 +1821,37 @@ instead, so we can omit the “other” branch:</p>
 <span class="c1">//=&gt; Recovered!</span>
 </code></pre></div></div>
 
-<p><code class="language-plaintext highlighter-rouge">Task.onErrorHandleWith</code> and <code class="language-plaintext highlighter-rouge">Task.onErrorRecoverWith</code> are the
-equivalent of <code class="language-plaintext highlighter-rouge">flatMap</code>, only for errors. In case we know or can
-evaluate a fallback result eagerly, we could use the shortcut
-operation <code class="language-plaintext highlighter-rouge">Task.onErrorHandle</code> like:</p>
+<p><code class="language-plaintext highlighter-rouge">Task.onErrorHandleWith</code>と<code class="language-plaintext highlighter-rouge">Task.onErrorRecoverWith</code>は、エラーの場合に限り<code class="language-plaintext highlighter-rouge">flatMap</code>に相当します。
+フォールバックの結果を遅延で評価できることがわかっている場合には、ショートカットの操作<code class="language-plaintext highlighter-rouge">Task.onErrorHandle</code>を使用することができます:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">recovered</span> <span class="k">=</span> <span class="nv">source</span><span class="o">.</span><span class="py">onErrorHandle</span> <span class="o">{</span>
   <span class="k">case</span> <span class="k">_:</span> <span class="kt">TimeoutException</span> <span class="o">=&gt;</span>
-    <span class="c1">// Oh, we know about timeouts, recover it</span>
+    <span class="c1">// あぁ、タイムアウトのことを知ってるから回復するよ</span>
     <span class="s">"Recovered!"</span>
   <span class="k">case</span> <span class="n">other</span> <span class="k">=&gt;</span>
-    <span class="k">throw</span> <span class="n">other</span> <span class="c1">// Rethrowing</span>
+    <span class="k">throw</span> <span class="n">other</span> <span class="c1">// 再スロー</span>
 <span class="o">}</span>
 </code></pre></div></div>
 
-<p>Or the partial function version with <code class="language-plaintext highlighter-rouge">onErrorRecover</code>:</p>
+<p>または、<code class="language-plaintext highlighter-rouge">onErrorRecover</code>を使った部分関数バージョン:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">recovered</span> <span class="k">=</span> <span class="nv">source</span><span class="o">.</span><span class="py">onErrorRecover</span> <span class="o">{</span>
   <span class="k">case</span> <span class="k">_:</span> <span class="kt">TimeoutException</span> <span class="o">=&gt;</span>
-    <span class="c1">// Oh, we know about timeouts, recover it</span>
+    <span class="c1">// あぁ、タイムアウトのことを知ってるから回復するよ</span>
     <span class="s">"Recovered!"</span>
 <span class="o">}</span>
 </code></pre></div></div>
     
-      <h3 id="restart-on-error">
+      <h3 id="エラーのときに再起動する">
         
         
-          Restart On Error <a href="#restart-on-error" class="anchor">#</a>
+          エラーのときに再起動する <a href="#エラーのときに再起動する" class="anchor">#</a>
         
         
       </h3>
 
-<p>The <code class="language-plaintext highlighter-rouge">Task</code> type, being just a specification, it can usually restart
-whatever process is supposed to deliver the final result and we can
-restart the source on error, for how many times are needed:</p>
+<p><code class="language-plaintext highlighter-rouge">タスク</code>タイプは単なる仕様であるため、通常は最終的な結果を得るためのあらゆるプロセスを再起動することができます。
+また、エラーが発生した場合には必要な回数だけソースを再起動することができます:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">scala.util.Random</span>
 
@@ -1910,12 +1862,12 @@ restart the source on error, for how many times are needed:</p>
     <span class="nv">Task</span><span class="o">.</span><span class="py">raiseError</span><span class="o">(</span><span class="k">new</span> <span class="nc">IllegalStateException</span><span class="o">(</span><span class="nv">other</span><span class="o">.</span><span class="py">toString</span><span class="o">))</span>
 <span class="o">}</span>
 
-<span class="c1">// Will retry 4 times for a random even number,</span>
-<span class="c1">// or fail if the maxRetries is reached!</span>
+<span class="c1">// 偶数のランダムな数字に対して4回リトライします</span>
+<span class="c1">// またはmaxRetriesに達した場合は失敗します！</span>
 <span class="k">val</span> <span class="nv">randomEven</span> <span class="k">=</span> <span class="nv">source</span><span class="o">.</span><span class="py">onErrorRestart</span><span class="o">(</span><span class="n">maxRetries</span> <span class="k">=</span> <span class="mi">4</span><span class="o">)</span>
 </code></pre></div></div>
 
-<p>We can also restart with a given predicate:</p>
+<p>また、与えられた述語で再開することもできます:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">scala.util.Random</span>
 
@@ -1926,16 +1878,15 @@ restart the source on error, for how many times are needed:</p>
     <span class="nv">Task</span><span class="o">.</span><span class="py">raiseError</span><span class="o">(</span><span class="k">new</span> <span class="nc">IllegalStateException</span><span class="o">(</span><span class="nv">other</span><span class="o">.</span><span class="py">toString</span><span class="o">))</span>
 <span class="o">}</span>
 
-<span class="c1">// Will keep retrying for as long as the source fails</span>
-<span class="c1">// with an IllegalStateException</span>
+<span class="c1">// IllegalStateExceptionが発生する限り、再試行を続けます</span>
 <span class="k">val</span> <span class="nv">randomEven</span> <span class="k">=</span> <span class="nv">source</span><span class="o">.</span><span class="py">onErrorRestartIf</span> <span class="o">{</span>
   <span class="k">case</span> <span class="k">_:</span> <span class="kt">IllegalStateException</span> <span class="o">=&gt;</span> <span class="kc">true</span>
   <span class="k">case</span> <span class="k">_</span> <span class="k">=&gt;</span> <span class="kc">false</span>
 <span class="o">}</span>
 </code></pre></div></div>
 
-<p>Or we could implement our own retry with exponential backoff, because
-it’s cool doing so:</p>
+<p>あるいは、指数関数的なバックオフによる独自のリトライを実装することもできます。<br />
+そうするのがクールだからです:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">retryBackoff</span><span class="o">[</span><span class="kt">A</span><span class="o">](</span><span class="n">source</span><span class="k">:</span> <span class="kt">Task</span><span class="o">[</span><span class="kt">A</span><span class="o">],</span>
   <span class="n">maxRetries</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">firstDelay</span><span class="k">:</span> <span class="kt">FiniteDuration</span><span class="o">)</span><span class="k">:</span> <span class="kt">Task</span><span class="o">[</span><span class="kt">A</span><span class="o">]</span> <span class="k">=</span> <span class="o">{</span>
@@ -1943,7 +1894,7 @@ it’s cool doing so:</p>
   <span class="nv">source</span><span class="o">.</span><span class="py">onErrorHandleWith</span> <span class="o">{</span>
     <span class="k">case</span> <span class="n">ex</span><span class="k">:</span> <span class="kt">Exception</span> <span class="o">=&gt;</span>
       <span class="nf">if</span> <span class="o">(</span><span class="n">maxRetries</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">)</span>
-        <span class="c1">// Recursive call, it's OK as Monix is stack-safe</span>
+        <span class="c1">// 再帰呼び出しも、Monixはスタック・セーフなので問題なし</span>
         <span class="nf">retryBackoff</span><span class="o">(</span><span class="n">source</span><span class="o">,</span> <span class="n">maxRetries</span><span class="o">-</span><span class="mi">1</span><span class="o">,</span> <span class="n">firstDelay</span><span class="o">*</span><span class="mi">2</span><span class="o">)</span>
           <span class="o">.</span><span class="py">delayExecution</span><span class="o">(</span><span class="n">firstDelay</span><span class="o">)</span>
       <span class="k">else</span>
@@ -1952,17 +1903,16 @@ it’s cool doing so:</p>
 <span class="o">}</span>
 </code></pre></div></div>
     
-      <h3 id="expose-errors">
+      <h3 id="エラーを公開する">
         
         
-          Expose Errors <a href="#expose-errors" class="anchor">#</a>
+          エラーを公開する <a href="#エラーを公開する" class="anchor">#</a>
         
         
       </h3>
 
-<p>The <code class="language-plaintext highlighter-rouge">Task</code> monadic context is hiding errors that happen, much like
-Scala’s <code class="language-plaintext highlighter-rouge">Try</code> or <code class="language-plaintext highlighter-rouge">Future</code>. But sometimes we want to expose those
-errors such that we can recover more efficiently:</p>
+<p><code class="language-plaintext highlighter-rouge">Task</code>のモナディックコンテキストは、Scalaの<code class="language-plaintext highlighter-rouge">Try</code>や<code class="language-plaintext highlighter-rouge">Future</code>のように発生したエラーを隠します。
+しかし、時にはこれらのエラーを公開してより効率的に回復できるようにしたいこともあります:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">scala.util.</span><span class="o">{</span><span class="nc">Try</span><span class="o">,</span> <span class="nc">Success</span><span class="o">,</span> <span class="nc">Failure</span><span class="o">}</span>
 
@@ -1970,7 +1920,7 @@ errors such that we can recover more efficiently:</p>
 <span class="k">val</span> <span class="nv">materialized</span><span class="k">:</span> <span class="kt">Task</span><span class="o">[</span><span class="kt">Try</span><span class="o">[</span><span class="kt">Int</span><span class="o">]]</span> <span class="k">=</span>
   <span class="nv">source</span><span class="o">.</span><span class="py">materialize</span>
 
-<span class="c1">// Now we can flatMap over both success and failure:</span>
+<span class="c1">// これで成功も失敗もフラットにできるようになりました:</span>
 <span class="k">val</span> <span class="nv">recovered</span> <span class="k">=</span> <span class="nv">materialized</span><span class="o">.</span><span class="py">flatMap</span> <span class="o">{</span>
   <span class="k">case</span> <span class="nc">Success</span><span class="o">(</span><span class="n">value</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="nv">Task</span><span class="o">.</span><span class="py">now</span><span class="o">(</span><span class="n">value</span><span class="o">)</span>
   <span class="k">case</span> <span class="nc">Failure</span><span class="o">(</span><span class="k">_</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="nv">Task</span><span class="o">.</span><span class="py">now</span><span class="o">(</span><span class="mi">0</span><span class="o">)</span>
@@ -1980,24 +1930,23 @@ errors such that we can recover more efficiently:</p>
 <span class="c1">//=&gt; 0</span>
 </code></pre></div></div>
 
-<p>There’s also the reverse of materialize, which is <code class="language-plaintext highlighter-rouge">Task.dematerialize</code>:</p>
+<p>また、マテリアライズの逆もあり<code class="language-plaintext highlighter-rouge">Task.dematerialize</code>となります:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">scala.util.Try</span>
 
 <span class="k">val</span> <span class="nv">source</span> <span class="k">=</span> <span class="nv">Task</span><span class="o">.</span><span class="py">raiseError</span><span class="o">[</span><span class="kt">Int</span><span class="o">](</span><span class="k">new</span> <span class="nc">IllegalStateException</span><span class="o">)</span>
 
-<span class="c1">// Exposing errors</span>
+<span class="c1">// エラーを公開する</span>
 <span class="k">val</span> <span class="nv">materialized</span> <span class="k">=</span> <span class="nv">source</span><span class="o">.</span><span class="py">materialize</span>
 <span class="c1">// materialize: Task[Try[Int]] = ???</span>
 
-<span class="c1">// Hiding errors again</span>
+<span class="c1">// 再びエラーを隠す</span>
 <span class="k">val</span> <span class="nv">dematerialized</span> <span class="k">=</span> <span class="nv">materialized</span><span class="o">.</span><span class="py">dematerialize</span>
 <span class="c1">// dematerialized: Task[Int] = ???</span>
 </code></pre></div></div>
 
-<p>We can also convert any <code class="language-plaintext highlighter-rouge">Task</code> into a <code class="language-plaintext highlighter-rouge">Task[Throwable]</code> that will
-expose any errors that happen and will also terminate with an
-<code class="language-plaintext highlighter-rouge">NoSuchElementException</code> in case the source completes with success:</p>
+<p>また、任意の<code class="language-plaintext highlighter-rouge">Task</code>を<code class="language-plaintext highlighter-rouge">Task[Throwable]</code>に変換することもできます。
+起こったエラーを公開したり、ソースが成功して完了した場合は<code class="language-plaintext highlighter-rouge">NoSuchElementException</code>で終了します:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">source</span> <span class="k">=</span> <span class="nv">Task</span><span class="o">.</span><span class="py">raiseError</span><span class="o">[</span><span class="kt">Int</span><span class="o">](</span><span class="k">new</span> <span class="nc">IllegalStateException</span><span class="o">)</span>
 
