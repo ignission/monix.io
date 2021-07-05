@@ -5,16 +5,16 @@ description: |
   Recipes for achieving parallelism
 ---
 
-Monix provides multiple ways for achieving parallelism, depending on use-case.
+Monixでは、ユースケースに応じて複数の並列化の方法が用意されています。
 
-The samples in this document are copy/paste-able, but to get the imports out of the way:
+このドキュメントのサンプルはコピー・ペースト可能ですが、importを整理します:
 
 ```scala mdoc:silent:nest
-// On evaluation a Scheduler is needed
+// 評価時にはスケジューラーが必要
 import monix.execution.Scheduler.Implicits.global
-// For Task
+// Taskの使用に必要
 import monix.eval._
-// For Observable
+// Observableの使用に必要
 import monix.reactive._
 ```
 
@@ -23,176 +23,152 @@ import monix.execution.schedulers.TestScheduler
 implicit val global = TestScheduler()
 ```
 
-## Parallelism with Task
+## Taskでの並列処理
 
-We can do parallel execution in batches, that does deterministic
-(ordered) signaling of results with the help of [Task](../eval/task.md).
+[タスク](../eval/task.md) の助けを借りて、結果の決定論的(順序付けられた)シグナリングを行うバッチ単位の並列実行が可能です。
 
-### The Naive Way
+### ネイティブに使う
 
-The following example uses
-[Task.parSequence]({{ page.path | api_base_url }}monix/eval/Task$.htmll#parSequenceN[A](parallelism:Int)(in:Iterable[monix.eval.Task[A]]):monix.eval.Task[List[A]]),
-which does parallel processing while preserving result ordering.
+次の例では，[Task.parSequence]({{ page.path | api_base_url }}monix/eval/Task$.htmll#parSequenceN[A](parallelism:Int)(in:Iterable[monix.eval.Task[A]]):monix.eval.Task[List[A]]) を使用しています。
+これは、結果の順序を保持したまま並列処理を行うものです。
 
 ```scala mdoc:silent:nest
 val items = 0 until 1000
 
-// The list of all tasks needed for execution
+// 実行に必要なすべてのタスクのリスト
 val tasks = items.map(i => Task(i * 2))
-// Processing in parallel
+// 並列に処理する
 val aggregate = Task.parSequence(tasks).map(_.toList)
 
-// Evaluation:
+// 評価:
 aggregate.foreach(println)
 //=> List(0, 2, 4, 6, 8, 10, 12, 14, 16,...
 ```
 
-If ordering of results does not matter, you can also use 
-[Task.parSequenceUnordered]({{ page.path | api_base_url }}monix/eval/Task$.htmll#parSequenceUnordered[A](in:Iterable[monix.eval.Task[A]]):monix.eval.Task[List[A]])
-instead of `parSequence`, which might yield better results, given its non-blocking execution.
+結果の順序が重要でない場合は、`parSequence`の代わりに[Task.parSequenceUnordered]({{ page.path | api_base_url }}monix/eval/Task$.htmll#parSequenceUnordered[A](in:Iterable[monix.eval.Task[A]]):monix.eval.Task[List[A]]) を使用できます。
+ノンブロッキングで実行できるので、より良い結果が得られるかもしれません。
 
-### Imposing a Parallelism Limit
+### 並列度制限の導入
 
-The `Task.parSequence` builder, as exemplified above, will potentially execute
-all given tasks in parallel, the problem being that this can lead to inefficiency.
-For example we might be doing HTTP requests and starting 10000 HTTP
-requests in parallel is not necessarily wise as it can choke the
-server on the other end.
+上の例のように、`Task.parSequence`ビルダーは与えられたすべてのタスクを潜在的に並列実行します。
+しかし、問題はこれが非効率につながる可能性があるということです。
+例えばHTTPリクエストを行っている場合、10000のHTTPリクエストを並行して実行することは、相手側のサーバーをダウンさせる可能性があるため必ずしも賢明ではありません。
 
-To solve this we can split the workload in batches of parallel tasks that
-are then sequenced:
+この問題を解決するには、ワークロードを並列タスクのバッチに分割し、それを順番に実行します:
 
 ```scala mdoc:silent:nest
 val items = 0 until 1000
-// The list of all tasks needed for execution
+// 実行に必要なすべてのタスクのリスト
 val tasks = items.map(i => Task(i * 2))
-// Building batches of 10 tasks to execute in parallel:
+// 10個のタスクのバッチを構築して並列に実行する:
 val batches = tasks.sliding(10,10).map(b => Task.parSequence(b)).toIterable
-// Sequencing batches, then flattening the final result
+// バッチを配列にし、最終的な結果をフラットにする
 val aggregate = Task.sequence(batches).map(_.flatten.toList)
 
-// Evaluation:
+// 評価する:
 aggregate.foreach(println)
 //=> List(0, 2, 4, 6, 8, 10, 12, 14, 16,...
 ```
 
-Note how this strategy is difficult to achieve with Scala's `Future`
-because even though we have `Future.sequence`, its behavior is strict
-and is thus not able to differentiate well between sequencing and
-parallelism, this behavior being controlled by passing a lazy or a
-strict sequence to `Future.sequence`, which is obviously error-prone.
+この戦略はScalaの`Future`では実現が難しいことに注意してください。
+なぜなら、`Future.sequence`があるにもかかわらず、その動作は厳密なものであるためシーケンスとパラレルをうまく使い分けることができません。
+この動作は`Future.sequence`にlazyまたはstrictシーケンスを渡すことで制御されますが、これは明らかにエラーを起こしやすいです。
 
 ### Batched Observables
 
-We can also combine this with `Observable.flatMap` for doing requests
-in batches:
+これを`Observable.flatMap`と組み合わせて、リクエストをバッチ処理することもできます。
 
 ```scala mdoc:silent:nest
 import monix.eval._
 import monix.reactive._
 
-// The `bufferIntrospective` will do buffering, up to a certain
-// `bufferSize`, for as long as the downstream is busy and then
-// stream a whole sequence of all buffered events at once
+// `bufferIntrospective`は、ダウンストリームがビジー状態である限り、
+// 特定の`bufferSize`までバッファリングされたすべてのイベントのシーケンスを
+// 一度にストリーミングします。
 val source = Observable.range(0,1000).bufferIntrospective(256)
 
-// Processing in batches, powered by `Task`
+// バッチ処理には`Task`を使用しています
 val batched = source.flatMap { items =>
-  // The list of all tasks needed for execution
+  // 実行に必要なすべてのタスクのリスト
   val tasks = items.map(i => Task(i * 2))
-  // Building batches of 10 tasks to execute in parallel:
+  // 10個のタスクを並列に実行するバッチの構築:
   val batches = tasks.sliding(10,10).map(b => Task.parSequence(b)).toIterable
-  // Sequencing batches, then flattening the final result
+  // バッチを配列にし、最終的な結果をフラットにする
   val aggregate = Task.sequence(batches).map(_.flatten.iterator)
-  // Converting into an observable, needed for flatMap
+  // flatMapに必要なObservableへの変換
   Observable.fromIterator(aggregate)
 }
 
-// Evaluation:
+// 評価:
 batched.toListL.foreach(println)
 //=> List(0, 2, 4, 6, 8, 10, 12, 14, 16,...
 ```
 
-Note the use of 
-[bufferIntrospective]({{ page.path | api_base_url }}monix/reactive/Observable.html#bufferIntrospective(maxSize:Int):Self[List[A]]),
-which buffers incoming events while the downstream is busy, after which
-it emits the buffer as a single bundle. The
-[bufferTumbling]({{ page.path | api_base_url }}monix/reactive/Observable.html#bufferTumbling(count:Int):Self[Seq[A]])
-operator can be a more deterministic alternative.
+[bufferIntrospective]({{ page.path | api_base_url }}monix/reactive/Observable.html#bufferIntrospective(maxSize:Int):Self[List[A]]) の使用に注意してください。
+これは、ダウンストリームがビジー状態の間受信したイベントをバッファリングし、その後はバッファを1つのバンドルとして放出します。
+[bufferTumbling]({{ page.path | api_base_url }}monix/reactive/Observable.html#bufferTumbling(count:Int):Self[Seq[A]]) のようなメソッドは、より決定性の高い代替手段となり得ます。
 
 ## Observable.mapParallelUnordered
 
-Another way to achieve parallelism is to use the 
-[Observable.mapParallelUnordered]({{ page.path | api_base_url }}monix/reactive/Observable.html#mapParallelUnordered[B](parallelism:Int)(f:A=>monix.eval.Task[B]):Self[B])
-operator:
+並列化を実現するもう一つの方法は[Observable.mapParallelUnordered]({{ page.path | api_base_url }}monix/reactive/Observable.html#mapParallelUnordered[B](parallelism:Int)(f:A=>monix.eval.Task[B]):Self[B]) メソッドを使用することです:
 
 ```scala mdoc:silent:nest
 val source = Observable.range(0,1000)
-// The parallelism factor needs to be specified
+// 並列度を指定する必要があります
 val processed = source.mapParallelUnordered(parallelism = 10) { i =>
   Task(i * 2)
 }
 
-// Evaluation:
+// 評価する:
 processed.toListL.foreach(println)
 //=> List(2, 10, 0, 4, 8, 6, 12...
 ```
 
-Compared with using `Task.parSequence` as exemplified above, this operator
-**does not maintain ordering** of results as signaled by the source.
+上記の例のように`Task.parSequence`を使用する場合と比較して、このメソッドではソースから通知された結果の**順序は維持されません**。
 
-This leads to a more efficient execution, because the source doesn't
-get back-pressured for as long as there's at least one worker active,
-whereas with the batched execution strategy exemplified above we can
-have inefficiencies due to a single async task that takes too long to
-complete.
+これは、少なくとも1つのワーカーがアクティブである限り、ソースがバックプレッシャーを受けることがないため、より効率的な実行につながります。
+一方、上記の例のようなバッチ実行戦略では、1つの非同期タスクが完了するのに時間がかかりすぎて非効率になることがあります。
 
 ## Observable.mergeMap
 
-If `Observable.mapParallelUnordered` works with `Task`, then 
-[Observable.mergeMap](https://monix.io/api/2.2/monix/reactive/Observable.html#mergeMap[B](f:A=%3Emonix.reactive.Observable[B])(implicitos:monix.reactive.OverflowStrategy[B]):Self[B])
-works by merging `Observable` instances.
+もし、`Observable.mapParallelUnordered`が`Task`で動作するならば、
+[Observable.mergeMap](https://monix.io/api/2.2/monix/reactive/Observable.html#mergeMap[B](f:A=%3Emonix.reactive.Observable[B])(implicitos:monix.reactive.OverflowStrategy[B]):Self[B]) は`Observable`のインスタンスをマージして動作します。
 
 ```scala mdoc:silent:nest
 val source = Observable.range(0,1000)
-// The parallelism factor needs to be specified
+// 並列度を指定する必要があります
 val processed = source.mergeMap { i =>
   Observable.eval(i * 2).executeAsync
 }
 
-// Evaluation:
+// 評価する:
 processed.toListL.foreach(println)
 //=> List(0, 4, 6, 2, 8, 10, 12, 14...
 ```
 
-Note that `mergeMap` is similar with `concatMap` (aliased by `flatMap`
-in Monix), except that the observable streams emitted by the source
-get subscribed in parallel and thus the result is non-deterministic.
+なお、`mergeMap`はソースから出力される観測可能なストリームを並行してサブスクライブされるため、
+結果が非決定的であることを除いて`concatMap`(Monixでは`flatMap`のエイリアス)と似ています。
 
-Note that this `mergeMap` call, as exemplified above, does not have an
-optional `parallelism` parameter, which means that if the source is
-chatty, we can end up with *a lot* of observables subscribed in
-parallel. The issue is that the `mergeMap` operator is not meant for
-actual processing in parallel, but for joining active, concurrent
-streams.
+上の例のように、この `mergeMap` 呼び出しはオプションの`parallelism`パラメータを持っていないことに注意してください。
+つまりソースがおしゃべりであれば、並行してサブスクライブされたオブザーバが *大量* にできてしまうということです。
+
+問題は、`mergeMap`メソッドが実際の並列処理のためのものではなく、アクティブで同時進行しているストリームを結合するためのものです。
 
 ## Consumer.loadBalancer
 
-We can apply a `mapParallelUnordered` like operation on the consumer side, as
-exemplified in the [Consumer](../reactive/consumer.md) tutorial, by means of a
-load-balanced consumer, being able to do a final aggregate of the
-results of all workers:
+`MapParallelUnordered`のような操作をconsumer側に適用することができます。
+consumer側では、チュートリアルの[Consumer](./reactive/consumer.md) で例示されているように負荷分散されたコンシューマーを使って、すべてのワーカーの結果を最終的に集約することができます:
 
 ```scala mdoc:silent:nest
 import monix.eval._
 import monix.reactive._
 
-// A consumer that folds over the elements of the stream,
-// producing a sum as a result
+// ストリームの要素を折り返すコンシューマ
+// 結果として和を生成する
 val sumConsumer = Consumer.foldLeft[Long,Long](0L)(_ + _)
 
-// For processing sums in parallel, useless of course, but can become 
-// really helpful for logic sprinkled with I/O bound stuff
+// 合計を並列処理する場合はもちろん役に立たないが、
+// I/Oに縛られたロジックには非常に有効である。
 val loadBalancer = {
   Consumer
     .loadBalance(parallelism=10, sumConsumer)
@@ -200,12 +176,12 @@ val loadBalancer = {
 }
 
 val observable: Observable[Long] = Observable.range(0, 100000)
-// Our consumer turns our observable into a Task processing sums, w00t!
+// このコンシューマーは、observableをTaskの合計処理に変えてくれます w00t!
 val task: Task[Long] = observable.consumeWith(loadBalancer)
 
-// Consume the whole stream and get the result
+// ストリーム全体を消費して結果を得る
 task.runToFuture.foreach(println)
 //=> 4999950000
 ```
 
-Read the [Consumer](../reactive/consumer.md) document for more details.
+詳しくは[Consumer](../reactive/consumer.md) をご覧ください。

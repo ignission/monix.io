@@ -87,7 +87,7 @@ sbt new monix/monix-jvm-app-template.g8
 
 ## チュートリアル
   
-- [Parallel Processing](./tutorials/parallelism.md)
+- [並列処理](./tutorials/parallelism.md)
 {% for post in site.posts -%}{% if post.tutorial == "3x" %}
 - [{{ post.title }}]({{ post.url }})
 {% endif %}{% endfor %}
