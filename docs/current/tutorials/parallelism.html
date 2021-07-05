@@ -30,15 +30,15 @@
   <meta content="Parallel Processing &amp;mdash; Monix" property="og:title">
   <meta content="Recipes for achieving parallelism" property="og:description">
   <meta content="https://monix.io/docs/current/tutorials/parallelism.html" property="og:url">
-  <meta content="2021-05-14T14:48:18+00:00" property="article:modified_time">
+  <meta content="2021-07-05T15:07:01+00:00" property="article:modified_time">
     
   <meta content="article" property="og:type">
   <meta property="og:image" content="https://monix.io/public/images/monix-logo.png" />
   <meta property="og:image:secure_url" content="https://monix.io/public/images/monix-logo.png" />
   <!-- CSS -->
-  <link rel="stylesheet" href="/public/css/all.css?1625491081636864760">
+  <link rel="stylesheet" href="/public/css/all.css?1625497765190594296">
   <!--[if lt IE 9]>
-  <link rel="stylesheet" href="/public/css/forkme.ie.css?1625491081636864760">
+  <link rel="stylesheet" href="/public/css/forkme.ie.css?1625497765190594296">
   <![endif]-->
 
   <link rel="stylesheet" href="//fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
@@ -109,8 +109,8 @@
 
   
   <time class="post-date" itemprop="dateModified"
-    datetime="2021-05-14">
-    <b>ページの更新日:</b> 14 May 2021
+    datetime="2021-07-05">
+    <b>ページの更新日:</b> 05 Jul 2021
   </time>
   <nav role="navigation" id="type-info">
     
@@ -129,10 +129,10 @@
 
   <nav role="navigation" id="toc">
     <ul>
-  <li><a href="#parallelism-with-task">Parallelism with Task</a>
+  <li><a href="#taskでの並列処理">Taskでの並列処理</a>
     <ul>
-      <li><a href="#the-naive-way">The Naive Way</a></li>
-      <li><a href="#imposing-a-parallelism-limit">Imposing a Parallelism Limit</a></li>
+      <li><a href="#ネイティブに使う">ネイティブに使う</a></li>
+      <li><a href="#並列度制限の導入">並列度制限の導入</a></li>
       <li><a href="#batched-observables">Batched Observables</a></li>
     </ul>
   </li>
@@ -143,92 +143,84 @@
 
   </nav>
 
-  <p>Monix provides multiple ways for achieving parallelism, depending on use-case.</p>
+  <p>Monixでは、ユースケースに応じて複数の並列化の方法が用意されています。</p>
 
-<p>The samples in this document are copy/paste-able, but to get the imports out of the way:</p>
+<p>このドキュメントのサンプルはコピー・ペースト可能ですが、importを整理します:</p>
 
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// On evaluation a Scheduler is needed</span>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// 評価時にはスケジューラーが必要</span>
 <span class="k">import</span> <span class="nn">monix.execution.Scheduler.Implicits.global</span>
-<span class="c1">// For Task</span>
+<span class="c1">// Taskの使用に必要</span>
 <span class="k">import</span> <span class="nn">monix.eval._</span>
-<span class="c1">// For Observable</span>
+<span class="c1">// Observableの使用に必要</span>
 <span class="k">import</span> <span class="nn">monix.reactive._</span>
 </code></pre></div></div>
     
-      <h2 id="parallelism-with-task">
+      <h2 id="taskでの並列処理">
         
         
-          Parallelism with Task <a href="#parallelism-with-task" class="anchor">#</a>
+          Taskでの並列処理 <a href="#taskでの並列処理" class="anchor">#</a>
         
         
       </h2>
 
-<p>We can do parallel execution in batches, that does deterministic
-(ordered) signaling of results with the help of <a href="/docs/current/eval/task.html">Task</a>.</p>
+<p><a href="/docs/current/eval/task.html">タスク</a> の助けを借りて、結果の決定論的(順序付けられた)シグナリングを行うバッチ単位の並列実行が可能です。</p>
     
-      <h3 id="the-naive-way">
+      <h3 id="ネイティブに使う">
         
         
-          The Naive Way <a href="#the-naive-way" class="anchor">#</a>
+          ネイティブに使う <a href="#ネイティブに使う" class="anchor">#</a>
         
         
       </h3>
 
-<p>The following example uses
-<a href="/api/current/monix/eval/Task$.htmll#parSequenceN[A](parallelism:Int)(in:Iterable[monix.eval.Task[A]]):monix.eval.Task[List[A]]">Task.parSequence</a>,
-which does parallel processing while preserving result ordering.</p>
+<p>次の例では，<a href="/api/current/monix/eval/Task$.htmll#parSequenceN[A](parallelism:Int)(in:Iterable[monix.eval.Task[A]]):monix.eval.Task[List[A]]">Task.parSequence</a> を使用しています。
+これは、結果の順序を保持したまま並列処理を行うものです。</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">items</span> <span class="k">=</span> <span class="mi">0</span> <span class="n">until</span> <span class="mi">1000</span>
 
-<span class="c1">// The list of all tasks needed for execution</span>
+<span class="c1">// 実行に必要なすべてのタスクのリスト</span>
 <span class="k">val</span> <span class="nv">tasks</span> <span class="k">=</span> <span class="nv">items</span><span class="o">.</span><span class="py">map</span><span class="o">(</span><span class="n">i</span> <span class="k">=&gt;</span> <span class="nc">Task</span><span class="o">(</span><span class="n">i</span> <span class="o">*</span> <span class="mi">2</span><span class="o">))</span>
-<span class="c1">// Processing in parallel</span>
+<span class="c1">// 並列に処理する</span>
 <span class="k">val</span> <span class="nv">aggregate</span> <span class="k">=</span> <span class="nv">Task</span><span class="o">.</span><span class="py">parSequence</span><span class="o">(</span><span class="n">tasks</span><span class="o">).</span><span class="py">map</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">toList</span><span class="o">)</span>
 
-<span class="c1">// Evaluation:</span>
+<span class="c1">// 評価:</span>
 <span class="nv">aggregate</span><span class="o">.</span><span class="py">foreach</span><span class="o">(</span><span class="n">println</span><span class="o">)</span>
 <span class="c1">//=&gt; List(0, 2, 4, 6, 8, 10, 12, 14, 16,...</span>
 </code></pre></div></div>
 
-<p>If ordering of results does not matter, you can also use 
-<a href="/api/current/monix/eval/Task$.htmll#parSequenceUnordered[A](in:Iterable[monix.eval.Task[A]]):monix.eval.Task[List[A]]">Task.parSequenceUnordered</a>
-instead of <code class="language-plaintext highlighter-rouge">parSequence</code>, which might yield better results, given its non-blocking execution.</p>
+<p>結果の順序が重要でない場合は、<code class="language-plaintext highlighter-rouge">parSequence</code>の代わりに<a href="/api/current/monix/eval/Task$.htmll#parSequenceUnordered[A](in:Iterable[monix.eval.Task[A]]):monix.eval.Task[List[A]]">Task.parSequenceUnordered</a> を使用できます。
+ノンブロッキングで実行できるので、より良い結果が得られるかもしれません。</p>
     
-      <h3 id="imposing-a-parallelism-limit">
+      <h3 id="並列度制限の導入">
         
         
-          Imposing a Parallelism Limit <a href="#imposing-a-parallelism-limit" class="anchor">#</a>
+          並列度制限の導入 <a href="#並列度制限の導入" class="anchor">#</a>
         
         
       </h3>
 
-<p>The <code class="language-plaintext highlighter-rouge">Task.parSequence</code> builder, as exemplified above, will potentially execute
-all given tasks in parallel, the problem being that this can lead to inefficiency.
-For example we might be doing HTTP requests and starting 10000 HTTP
-requests in parallel is not necessarily wise as it can choke the
-server on the other end.</p>
+<p>上の例のように、<code class="language-plaintext highlighter-rouge">Task.parSequence</code>ビルダーは与えられたすべてのタスクを潜在的に並列実行します。
+しかし、問題はこれが非効率につながる可能性があるということです。
+例えばHTTPリクエストを行っている場合、10000のHTTPリクエストを並行して実行することは、相手側のサーバーをダウンさせる可能性があるため必ずしも賢明ではありません。</p>
 
-<p>To solve this we can split the workload in batches of parallel tasks that
-are then sequenced:</p>
+<p>この問題を解決するには、ワークロードを並列タスクのバッチに分割し、それを順番に実行します:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">items</span> <span class="k">=</span> <span class="mi">0</span> <span class="n">until</span> <span class="mi">1000</span>
-<span class="c1">// The list of all tasks needed for execution</span>
+<span class="c1">// 実行に必要なすべてのタスクのリスト</span>
 <span class="k">val</span> <span class="nv">tasks</span> <span class="k">=</span> <span class="nv">items</span><span class="o">.</span><span class="py">map</span><span class="o">(</span><span class="n">i</span> <span class="k">=&gt;</span> <span class="nc">Task</span><span class="o">(</span><span class="n">i</span> <span class="o">*</span> <span class="mi">2</span><span class="o">))</span>
-<span class="c1">// Building batches of 10 tasks to execute in parallel:</span>
+<span class="c1">// 10個のタスクのバッチを構築して並列に実行する:</span>
 <span class="k">val</span> <span class="nv">batches</span> <span class="k">=</span> <span class="nv">tasks</span><span class="o">.</span><span class="py">sliding</span><span class="o">(</span><span class="mi">10</span><span class="o">,</span><span class="mi">10</span><span class="o">).</span><span class="py">map</span><span class="o">(</span><span class="n">b</span> <span class="k">=&gt;</span> <span class="nv">Task</span><span class="o">.</span><span class="py">parSequence</span><span class="o">(</span><span class="n">b</span><span class="o">)).</span><span class="py">toIterable</span>
-<span class="c1">// Sequencing batches, then flattening the final result</span>
+<span class="c1">// バッチを配列にし、最終的な結果をフラットにする</span>
 <span class="k">val</span> <span class="nv">aggregate</span> <span class="k">=</span> <span class="nv">Task</span><span class="o">.</span><span class="py">sequence</span><span class="o">(</span><span class="n">batches</span><span class="o">).</span><span class="py">map</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">flatten</span><span class="o">.</span><span class="py">toList</span><span class="o">)</span>
 
-<span class="c1">// Evaluation:</span>
+<span class="c1">// 評価する:</span>
 <span class="nv">aggregate</span><span class="o">.</span><span class="py">foreach</span><span class="o">(</span><span class="n">println</span><span class="o">)</span>
 <span class="c1">//=&gt; List(0, 2, 4, 6, 8, 10, 12, 14, 16,...</span>
 </code></pre></div></div>
 
-<p>Note how this strategy is difficult to achieve with Scala’s <code class="language-plaintext highlighter-rouge">Future</code>
-because even though we have <code class="language-plaintext highlighter-rouge">Future.sequence</code>, its behavior is strict
-and is thus not able to differentiate well between sequencing and
-parallelism, this behavior being controlled by passing a lazy or a
-strict sequence to <code class="language-plaintext highlighter-rouge">Future.sequence</code>, which is obviously error-prone.</p>
+<p>この戦略はScalaの<code class="language-plaintext highlighter-rouge">Future</code>では実現が難しいことに注意してください。
+なぜなら、<code class="language-plaintext highlighter-rouge">Future.sequence</code>があるにもかかわらず、その動作は厳密なものであるためシーケンスとパラレルをうまく使い分けることができません。
+この動作は<code class="language-plaintext highlighter-rouge">Future.sequence</code>にlazyまたはstrictシーケンスを渡すことで制御されますが、これは明らかにエラーを起こしやすいです。</p>
     
       <h3 id="batched-observables">
         
@@ -238,40 +230,36 @@ strict sequence to <code class="language-plaintext highlighter-rouge">Future.seq
         
       </h3>
 
-<p>We can also combine this with <code class="language-plaintext highlighter-rouge">Observable.flatMap</code> for doing requests
-in batches:</p>
+<p>これを<code class="language-plaintext highlighter-rouge">Observable.flatMap</code>と組み合わせて、リクエストをバッチ処理することもできます。</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">monix.eval._</span>
 <span class="k">import</span> <span class="nn">monix.reactive._</span>
 
-<span class="c1">// The `bufferIntrospective` will do buffering, up to a certain</span>
-<span class="c1">// `bufferSize`, for as long as the downstream is busy and then</span>
-<span class="c1">// stream a whole sequence of all buffered events at once</span>
+<span class="c1">// `bufferIntrospective`は、ダウンストリームがビジー状態である限り、</span>
+<span class="c1">// 特定の`bufferSize`までバッファリングされたすべてのイベントのシーケンスを</span>
+<span class="c1">// 一度にストリーミングします。</span>
 <span class="k">val</span> <span class="nv">source</span> <span class="k">=</span> <span class="nv">Observable</span><span class="o">.</span><span class="py">range</span><span class="o">(</span><span class="mi">0</span><span class="o">,</span><span class="mi">1000</span><span class="o">).</span><span class="py">bufferIntrospective</span><span class="o">(</span><span class="mi">256</span><span class="o">)</span>
 
-<span class="c1">// Processing in batches, powered by `Task`</span>
+<span class="c1">// バッチ処理には`Task`を使用しています</span>
 <span class="k">val</span> <span class="nv">batched</span> <span class="k">=</span> <span class="nv">source</span><span class="o">.</span><span class="py">flatMap</span> <span class="o">{</span> <span class="n">items</span> <span class="k">=&gt;</span>
-  <span class="c1">// The list of all tasks needed for execution</span>
+  <span class="c1">// 実行に必要なすべてのタスクのリスト</span>
   <span class="k">val</span> <span class="nv">tasks</span> <span class="k">=</span> <span class="nv">items</span><span class="o">.</span><span class="py">map</span><span class="o">(</span><span class="n">i</span> <span class="k">=&gt;</span> <span class="nc">Task</span><span class="o">(</span><span class="n">i</span> <span class="o">*</span> <span class="mi">2</span><span class="o">))</span>
-  <span class="c1">// Building batches of 10 tasks to execute in parallel:</span>
+  <span class="c1">// 10個のタスクを並列に実行するバッチの構築:</span>
   <span class="k">val</span> <span class="nv">batches</span> <span class="k">=</span> <span class="nv">tasks</span><span class="o">.</span><span class="py">sliding</span><span class="o">(</span><span class="mi">10</span><span class="o">,</span><span class="mi">10</span><span class="o">).</span><span class="py">map</span><span class="o">(</span><span class="n">b</span> <span class="k">=&gt;</span> <span class="nv">Task</span><span class="o">.</span><span class="py">parSequence</span><span class="o">(</span><span class="n">b</span><span class="o">)).</span><span class="py">toIterable</span>
-  <span class="c1">// Sequencing batches, then flattening the final result</span>
+  <span class="c1">// バッチを配列にし、最終的な結果をフラットにする</span>
   <span class="k">val</span> <span class="nv">aggregate</span> <span class="k">=</span> <span class="nv">Task</span><span class="o">.</span><span class="py">sequence</span><span class="o">(</span><span class="n">batches</span><span class="o">).</span><span class="py">map</span><span class="o">(</span><span class="nv">_</span><span class="o">.</span><span class="py">flatten</span><span class="o">.</span><span class="py">iterator</span><span class="o">)</span>
-  <span class="c1">// Converting into an observable, needed for flatMap</span>
+  <span class="c1">// flatMapに必要なObservableへの変換</span>
   <span class="nv">Observable</span><span class="o">.</span><span class="py">fromIterator</span><span class="o">(</span><span class="n">aggregate</span><span class="o">)</span>
 <span class="o">}</span>
 
-<span class="c1">// Evaluation:</span>
+<span class="c1">// 評価:</span>
 <span class="nv">batched</span><span class="o">.</span><span class="py">toListL</span><span class="o">.</span><span class="py">foreach</span><span class="o">(</span><span class="n">println</span><span class="o">)</span>
 <span class="c1">//=&gt; List(0, 2, 4, 6, 8, 10, 12, 14, 16,...</span>
 </code></pre></div></div>
 
-<p>Note the use of 
-<a href="/api/current/monix/reactive/Observable.html#bufferIntrospective(maxSize:Int):Self[List[A]]">bufferIntrospective</a>,
-which buffers incoming events while the downstream is busy, after which
-it emits the buffer as a single bundle. The
-<a href="/api/current/monix/reactive/Observable.html#bufferTumbling(count:Int):Self[Seq[A]]">bufferTumbling</a>
-operator can be a more deterministic alternative.</p>
+<p><a href="/api/current/monix/reactive/Observable.html#bufferIntrospective(maxSize:Int):Self[List[A]]">bufferIntrospective</a> の使用に注意してください。
+これは、ダウンストリームがビジー状態の間受信したイベントをバッファリングし、その後はバッファを1つのバンドルとして放出します。
+<a href="/api/current/monix/reactive/Observable.html#bufferTumbling(count:Int):Self[Seq[A]]">bufferTumbling</a> のようなメソッドは、より決定性の高い代替手段となり得ます。</p>
     
       <h2 id="observablemapparallelunordered">
         
@@ -281,29 +269,23 @@ operator can be a more deterministic alternative.</p>
         
       </h2>
 
-<p>Another way to achieve parallelism is to use the 
-<a href="/api/current/monix/reactive/Observable.html#mapParallelUnordered[B](parallelism:Int)(f:A=&gt;monix.eval.Task[B]):Self[B]">Observable.mapParallelUnordered</a>
-operator:</p>
+<p>並列化を実現するもう一つの方法は<a href="/api/current/monix/reactive/Observable.html#mapParallelUnordered[B](parallelism:Int)(f:A=&gt;monix.eval.Task[B]):Self[B]">Observable.mapParallelUnordered</a> メソッドを使用することです:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">source</span> <span class="k">=</span> <span class="nv">Observable</span><span class="o">.</span><span class="py">range</span><span class="o">(</span><span class="mi">0</span><span class="o">,</span><span class="mi">1000</span><span class="o">)</span>
-<span class="c1">// The parallelism factor needs to be specified</span>
+<span class="c1">// 並列度を指定する必要があります</span>
 <span class="k">val</span> <span class="nv">processed</span> <span class="k">=</span> <span class="nv">source</span><span class="o">.</span><span class="py">mapParallelUnordered</span><span class="o">(</span><span class="n">parallelism</span> <span class="k">=</span> <span class="mi">10</span><span class="o">)</span> <span class="o">{</span> <span class="n">i</span> <span class="k">=&gt;</span>
   <span class="nc">Task</span><span class="o">(</span><span class="n">i</span> <span class="o">*</span> <span class="mi">2</span><span class="o">)</span>
 <span class="o">}</span>
 
-<span class="c1">// Evaluation:</span>
+<span class="c1">// 評価する:</span>
 <span class="nv">processed</span><span class="o">.</span><span class="py">toListL</span><span class="o">.</span><span class="py">foreach</span><span class="o">(</span><span class="n">println</span><span class="o">)</span>
 <span class="c1">//=&gt; List(2, 10, 0, 4, 8, 6, 12...</span>
 </code></pre></div></div>
 
-<p>Compared with using <code class="language-plaintext highlighter-rouge">Task.parSequence</code> as exemplified above, this operator
-<strong>does not maintain ordering</strong> of results as signaled by the source.</p>
+<p>上記の例のように<code class="language-plaintext highlighter-rouge">Task.parSequence</code>を使用する場合と比較して、このメソッドではソースから通知された結果の<strong>順序は維持されません</strong>。</p>
 
-<p>This leads to a more efficient execution, because the source doesn’t
-get back-pressured for as long as there’s at least one worker active,
-whereas with the batched execution strategy exemplified above we can
-have inefficiencies due to a single async task that takes too long to
-complete.</p>
+<p>これは、少なくとも1つのワーカーがアクティブである限り、ソースがバックプレッシャーを受けることがないため、より効率的な実行につながります。
+一方、上記の例のようなバッチ実行戦略では、1つの非同期タスクが完了するのに時間がかかりすぎて非効率になることがあります。</p>
     
       <h2 id="observablemergemap">
         
@@ -313,31 +295,27 @@ complete.</p>
         
       </h2>
 
-<p>If <code class="language-plaintext highlighter-rouge">Observable.mapParallelUnordered</code> works with <code class="language-plaintext highlighter-rouge">Task</code>, then 
-<a href="https://monix.io/api/2.2/monix/reactive/Observable.html#mergeMap[B](f:A=%3Emonix.reactive.Observable[B])(implicitos:monix.reactive.OverflowStrategy[B]):Self[B]">Observable.mergeMap</a>
-works by merging <code class="language-plaintext highlighter-rouge">Observable</code> instances.</p>
+<p>もし、<code class="language-plaintext highlighter-rouge">Observable.mapParallelUnordered</code>が<code class="language-plaintext highlighter-rouge">Task</code>で動作するならば、
+<a href="https://monix.io/api/2.2/monix/reactive/Observable.html#mergeMap[B](f:A=%3Emonix.reactive.Observable[B])(implicitos:monix.reactive.OverflowStrategy[B]):Self[B]">Observable.mergeMap</a> は<code class="language-plaintext highlighter-rouge">Observable</code>のインスタンスをマージして動作します。</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">source</span> <span class="k">=</span> <span class="nv">Observable</span><span class="o">.</span><span class="py">range</span><span class="o">(</span><span class="mi">0</span><span class="o">,</span><span class="mi">1000</span><span class="o">)</span>
-<span class="c1">// The parallelism factor needs to be specified</span>
+<span class="c1">// 並列度を指定する必要があります</span>
 <span class="k">val</span> <span class="nv">processed</span> <span class="k">=</span> <span class="nv">source</span><span class="o">.</span><span class="py">mergeMap</span> <span class="o">{</span> <span class="n">i</span> <span class="k">=&gt;</span>
   <span class="nv">Observable</span><span class="o">.</span><span class="py">eval</span><span class="o">(</span><span class="n">i</span> <span class="o">*</span> <span class="mi">2</span><span class="o">).</span><span class="py">executeAsync</span>
 <span class="o">}</span>
 
-<span class="c1">// Evaluation:</span>
+<span class="c1">// 評価する:</span>
 <span class="nv">processed</span><span class="o">.</span><span class="py">toListL</span><span class="o">.</span><span class="py">foreach</span><span class="o">(</span><span class="n">println</span><span class="o">)</span>
 <span class="c1">//=&gt; List(0, 4, 6, 2, 8, 10, 12, 14...</span>
 </code></pre></div></div>
 
-<p>Note that <code class="language-plaintext highlighter-rouge">mergeMap</code> is similar with <code class="language-plaintext highlighter-rouge">concatMap</code> (aliased by <code class="language-plaintext highlighter-rouge">flatMap</code>
-in Monix), except that the observable streams emitted by the source
-get subscribed in parallel and thus the result is non-deterministic.</p>
+<p>なお、<code class="language-plaintext highlighter-rouge">mergeMap</code>はソースから出力される観測可能なストリームを並行してサブスクライブされるため、
+結果が非決定的であることを除いて<code class="language-plaintext highlighter-rouge">concatMap</code>(Monixでは<code class="language-plaintext highlighter-rouge">flatMap</code>のエイリアス)と似ています。</p>
 
-<p>Note that this <code class="language-plaintext highlighter-rouge">mergeMap</code> call, as exemplified above, does not have an
-optional <code class="language-plaintext highlighter-rouge">parallelism</code> parameter, which means that if the source is
-chatty, we can end up with <em>a lot</em> of observables subscribed in
-parallel. The issue is that the <code class="language-plaintext highlighter-rouge">mergeMap</code> operator is not meant for
-actual processing in parallel, but for joining active, concurrent
-streams.</p>
+<p>上の例のように、この <code class="language-plaintext highlighter-rouge">mergeMap</code> 呼び出しはオプションの<code class="language-plaintext highlighter-rouge">parallelism</code>パラメータを持っていないことに注意してください。
+つまりソースがおしゃべりであれば、並行してサブスクライブされたオブザーバが <em>大量</em> にできてしまうということです。</p>
+
+<p>問題は、<code class="language-plaintext highlighter-rouge">mergeMap</code>メソッドが実際の並列処理のためのものではなく、アクティブで同時進行しているストリームを結合するためのものです。</p>
     
       <h2 id="consumerloadbalancer">
         
@@ -347,20 +325,18 @@ streams.</p>
         
       </h2>
 
-<p>We can apply a <code class="language-plaintext highlighter-rouge">mapParallelUnordered</code> like operation on the consumer side, as
-exemplified in the <a href="/docs/current/reactive/consumer.html">Consumer</a> tutorial, by means of a
-load-balanced consumer, being able to do a final aggregate of the
-results of all workers:</p>
+<p><code class="language-plaintext highlighter-rouge">MapParallelUnordered</code>のような操作をconsumer側に適用することができます。
+consumer側では、チュートリアルの<a href="./reactive/consumer.md">Consumer</a> で例示されているように負荷分散されたコンシューマーを使って、すべてのワーカーの結果を最終的に集約することができます:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">monix.eval._</span>
 <span class="k">import</span> <span class="nn">monix.reactive._</span>
 
-<span class="c1">// A consumer that folds over the elements of the stream,</span>
-<span class="c1">// producing a sum as a result</span>
+<span class="c1">// ストリームの要素を折り返すコンシューマ</span>
+<span class="c1">// 結果として和を生成する</span>
 <span class="k">val</span> <span class="nv">sumConsumer</span> <span class="k">=</span> <span class="nv">Consumer</span><span class="o">.</span><span class="py">foldLeft</span><span class="o">[</span><span class="kt">Long</span>,<span class="kt">Long</span><span class="o">](</span><span class="mi">0L</span><span class="o">)(</span><span class="k">_</span> <span class="o">+</span> <span class="k">_</span><span class="o">)</span>
 
-<span class="c1">// For processing sums in parallel, useless of course, but can become </span>
-<span class="c1">// really helpful for logic sprinkled with I/O bound stuff</span>
+<span class="c1">// 合計を並列処理する場合はもちろん役に立たないが、</span>
+<span class="c1">// I/Oに縛られたロジックには非常に有効である。</span>
 <span class="k">val</span> <span class="nv">loadBalancer</span> <span class="k">=</span> <span class="o">{</span>
   <span class="nc">Consumer</span>
     <span class="o">.</span><span class="py">loadBalance</span><span class="o">(</span><span class="n">parallelism</span><span class="k">=</span><span class="mi">10</span><span class="o">,</span> <span class="n">sumConsumer</span><span class="o">)</span>
@@ -368,15 +344,15 @@ results of all workers:</p>
 <span class="o">}</span>
 
 <span class="k">val</span> <span class="nv">observable</span><span class="k">:</span> <span class="kt">Observable</span><span class="o">[</span><span class="kt">Long</span><span class="o">]</span> <span class="k">=</span> <span class="nv">Observable</span><span class="o">.</span><span class="py">range</span><span class="o">(</span><span class="mi">0</span><span class="o">,</span> <span class="mi">100000</span><span class="o">)</span>
-<span class="c1">// Our consumer turns our observable into a Task processing sums, w00t!</span>
+<span class="c1">// このコンシューマーは、observableをTaskの合計処理に変えてくれます w00t!</span>
 <span class="k">val</span> <span class="nv">task</span><span class="k">:</span> <span class="kt">Task</span><span class="o">[</span><span class="kt">Long</span><span class="o">]</span> <span class="k">=</span> <span class="nv">observable</span><span class="o">.</span><span class="py">consumeWith</span><span class="o">(</span><span class="n">loadBalancer</span><span class="o">)</span>
 
-<span class="c1">// Consume the whole stream and get the result</span>
+<span class="c1">// ストリーム全体を消費して結果を得る</span>
 <span class="nv">task</span><span class="o">.</span><span class="py">runToFuture</span><span class="o">.</span><span class="py">foreach</span><span class="o">(</span><span class="n">println</span><span class="o">)</span>
 <span class="c1">//=&gt; 4999950000</span>
 </code></pre></div></div>
 
-<p>Read the <a href="/docs/current/reactive/consumer.html">Consumer</a> document for more details.</p>
+<p>詳しくは<a href="/docs/current/reactive/consumer.html">Consumer</a> をご覧ください。</p>
 
 
   <div class="buttons">
