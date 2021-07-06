@@ -30,15 +30,15 @@
   <meta content="Task &amp;mdash; Monix" property="og:title">
   <meta content="このデータ型は非同期の計算や、副作用の制御、不確定性の回避、コールバック地獄の回避に役立ちます。" property="og:description">
   <meta content="https://monix.io/docs/current/eval/task.html" property="og:url">
-  <meta content="2021-07-06T00:29:04+00:00" property="article:modified_time">
+  <meta content="2021-07-06T00:33:05+00:00" property="article:modified_time">
     
   <meta content="article" property="og:type">
   <meta property="og:image" content="https://monix.io/public/images/monix-logo.png" />
   <meta property="og:image:secure_url" content="https://monix.io/public/images/monix-logo.png" />
   <!-- CSS -->
-  <link rel="stylesheet" href="/public/css/all.css?1625531532027946535">
+  <link rel="stylesheet" href="/public/css/all.css?1625531755785814998">
   <!--[if lt IE 9]>
-  <link rel="stylesheet" href="/public/css/forkme.ie.css?1625531532027946535">
+  <link rel="stylesheet" href="/public/css/forkme.ie.css?1625531755785814998">
   <![endif]-->
 
   <link rel="stylesheet" href="//fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
@@ -133,7 +133,7 @@
     <ul>
       <li><a href="#設計の概要">設計の概要</a></li>
       <li><a href="#scalaのfutureとの比較">ScalaのFutureとの比較</a></li>
-      <li><a href="#scalazのタスクとの比較">Scalazのタスクとの比較</a></li>
+      <li><a href="#scalazのtaskとの比較">ScalazのTaskとの比較</a></li>
     </ul>
   </li>
   <li><a href="#実行-runtofuture--foreach">実行 (runToFuture &amp; foreach)</a>
@@ -172,7 +172,7 @@
     <ul>
       <li><a href="#flatmapと末尾再帰ループ">FlatMapと末尾再帰ループ</a></li>
       <li><a href="#並列性-catsparallel">並列性 (cats.Parallel)</a></li>
-      <li><a href="#タスクのシーケンスから結果を収集する">タスクのシーケンスから結果を収集する</a></li>
+      <li><a href="#taskのシーケンスから結果を収集する">Taskのシーケンスから結果を収集する</a></li>
       <li><a href="#race">Race</a></li>
       <li><a href="#race-many">Race Many</a></li>
       <li><a href="#遅延実行">遅延実行</a></li>
@@ -207,7 +207,7 @@
 
 <p>importを整理します:</p>
 
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// タスクを評価するためには、Schedulerが必要です</span>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Taskを評価するためには、Schedulerが必要です</span>
 <span class="k">import</span> <span class="nn">monix.execution.Scheduler.Implicits.global</span>
 
 <span class="c1">// キャンセル可能なFuture型</span>
@@ -220,10 +220,10 @@
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// sumを実行すると、(applyのセマンティクスにより)別のスレッドで発生します</span>
 <span class="c1">// しかし、このインスタンスの構築時には何も起こりません</span>
-<span class="c1">// この表現は純粋で、単なる仕様です。タスクはデフォルトでは遅延動作をします ;-)</span>
+<span class="c1">// この表現は純粋で、単なる仕様です。Taskはデフォルトでは遅延動作をします ;-)</span>
 <span class="k">val</span> <span class="nv">task</span> <span class="k">=</span> <span class="nc">Task</span> <span class="o">{</span> <span class="mi">1</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">}</span>
 
-<span class="c1">// タスクはrunToFutureでのみ評価されます</span>
+<span class="c1">// TaskはrunToFutureでのみ評価されます</span>
 <span class="c1">// コールバックスタイル:</span>
 <span class="k">val</span> <span class="nv">cancelable</span> <span class="k">=</span> <span class="nv">task</span><span class="o">.</span><span class="py">runAsync</span> <span class="o">{</span> <span class="n">result</span> <span class="k">=&gt;</span>
   <span class="n">result</span> <span class="k">match</span> <span class="o">{</span>
@@ -331,10 +331,10 @@
 というのも、どのような操作を行っても実装は最終的にスレッドプールに<code class="language-plaintext highlighter-rouge">Runnable</code>インスタンスを送ることになり、結果が各ステップで常にメモ化されるからです。
 一方、<code class="language-plaintext highlighter-rouge">Task</code>は同期的なバッチで実行することができます。</p>
     
-      <h3 id="scalazのタスクとの比較">
+      <h3 id="scalazのtaskとの比較">
         
         
-          Scalazのタスクとの比較 <a href="#scalazのタスクとの比較" class="anchor">#</a>
+          ScalazのTaskとの比較 <a href="#scalazのtaskとの比較" class="anchor">#</a>
         
         
       </h3>
@@ -354,9 +354,9 @@ Monix Taskの実装が異なる点は:</p>
 つまり、Scalazの<code class="language-plaintext highlighter-rouge">Task</code>は結局、同期評価やスレッドのブロックを偽装することになるのです。
 そして、<a href="/docs/current/best-practices/blocking.html">スレッドをブロックすることは非常に安全ではありません</a></li>
   <li>ScalazのTaskは、実行中の計算をキャンセルすることはできません。これは非決定論的な操作では重要です。
-例えば、<code class="language-plaintext highlighter-rouge">race</code>で競合状態を作ったときに、時間内に終わらなかった遅いタスクをキャンセルしたい場合があります。
+例えば、<code class="language-plaintext highlighter-rouge">race</code>で競合状態を作ったときに、時間内に終わらなかった遅いTaskをキャンセルしたい場合があります。
 というのもリソースをすぐに解放しないと、残念ながら深刻なリークが発生してプロセスがクラッシュしてしまうことがあるからです。</li>
-  <li>Scalazタスクは、非同期実行を扱うJavaの標準ライブラリを利用しています。
+  <li>ScalazのTaskは、非同期実行を扱うJavaの標準ライブラリを利用しています。
 これはポータビリティの観点からは好ましくありません。このAPIは<a href="http://www.scala-js.org/">Scala.js</a>の上ではサポートされていないからです。</li>
 </ol>
     
@@ -382,7 +382,7 @@ Monix Taskの実装が異なる点は:</p>
 
 <p><strong>注:</strong> <a href="/docs/current/execution/scheduler.html">Scheduler</a>は、非同期の境界がどのように強制されるか(あるいはされないか)を決定する設定可能な<a href="/docs/current/execution/scheduler.html#execution-model">実行モデル</a>を注入することができます。</p>
 
-<p>最もわかりやすく慣用的な方法は、タスクを実行して<a href="/api/current/monix/execution/CancelableFuture.html">CancelableFuture</a>を返すことです。
+<p>最もわかりやすく慣用的な方法は、Taskを実行して<a href="/api/current/monix/execution/CancelableFuture.html">CancelableFuture</a>を返すことです。
 これは、標準的な<code class="language-plaintext highlighter-rouge">Future</code>と<a href="/docs/current/execution/cancelable.html">Cancelable</a>を組み合わせたものです。</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">monix.eval.Task</span>
@@ -507,7 +507,7 @@ Monix Taskの実装が異なる点は:</p>
 
 <span class="nv">task</span><span class="o">.</span><span class="py">runSyncStep</span> <span class="k">match</span> <span class="o">{</span>
   <span class="k">case</span> <span class="nc">Left</span><span class="o">(</span><span class="n">task</span><span class="o">)</span> <span class="k">=&gt;</span>
-    <span class="c1">// このタスクは非同期実行を強く望んでいるのでうまくいきません</span>
+    <span class="c1">// このTaskは非同期実行を強く望んでいるのでうまくいきません</span>
     <span class="nv">task</span><span class="o">.</span><span class="py">runToFuture</span><span class="o">.</span><span class="py">foreach</span><span class="o">(</span><span class="n">r</span> <span class="k">=&gt;</span> <span class="nf">println</span><span class="o">(</span><span class="n">s</span><span class="s">"Async: $r"</span><span class="o">))</span>
   <span class="k">case</span> <span class="nc">Right</span><span class="o">(</span><span class="n">result</span><span class="o">)</span> <span class="k">=&gt;</span>
     <span class="nf">println</span><span class="o">(</span><span class="n">s</span><span class="s">"Got lucky: $result"</span><span class="o">)</span>
@@ -603,7 +603,7 @@ Monix Taskの実装が異なる点は:</p>
         
       </h3>
 
-<p><code class="language-plaintext highlighter-rouge">Task.defer</code>は、タスクのファクトリを構築するためのものです。例えばこれは、<code class="language-plaintext highlighter-rouge">Task.eval</code>とほぼ同様の動作をします。</p>
+<p><code class="language-plaintext highlighter-rouge">Task.defer</code>は、Taskのファクトリを構築するためのものです。例えばこれは、<code class="language-plaintext highlighter-rouge">Task.eval</code>とほぼ同様の動作をします。</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">task</span> <span class="k">=</span> <span class="nv">Task</span><span class="o">.</span><span class="py">defer</span> <span class="o">{</span>
   <span class="nv">Task</span><span class="o">.</span><span class="py">now</span> <span class="o">{</span> <span class="nf">println</span><span class="o">(</span><span class="s">"Effect"</span><span class="o">);</span> <span class="s">"Hello!"</span> <span class="o">}</span>
@@ -735,7 +735,7 @@ Taskが最もよく機能する方法だからです。しかし、この関数�
 時には本当に無駄なことをしていて、非同期の境界が発生することを保証したいことがあります。
 デフォルトでは<a href="/docs/current/execution/scheduler.html#execution-model">実行モデル</a>は最初は現在のスレッドでの実行を好みます。</p>
 
-<p>これにより、私たちのタスクが非同期に実行されることが保証されます:</p>
+<p>これにより、私たちのTaskが非同期に実行されることが保証されます:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">task</span> <span class="k">=</span> <span class="nv">Task</span><span class="o">.</span><span class="py">eval</span><span class="o">(</span><span class="s">"Hello!"</span><span class="o">).</span><span class="py">executeAsync</span>
 </code></pre></div></div>
@@ -955,7 +955,7 @@ Taskが最もよく機能する方法だからです。しかし、この関数�
 <p>いくつかの注意点:</p>
 
 <ul>
-  <li>このビルダーで作成されたタスクは、非同期に(別の論理スレッドで)実行されることが保証されています。</li>
+  <li>このビルダーで作成されたTaskは、非同期に(別の論理スレッドで)実行されることが保証されています。</li>
   <li><a href="/docs/current/execution/scheduler.html">Scheduler</a>が注入され、それによって非同期実行のために物事をスケジュールしたり、遅延させたりすることができます。</li>
   <li>しかし、前述のとおりこのコールバックはすでに非同期に実行されるので、用意された<code class="language-plaintext highlighter-rouge">Scheduler</code>で実行するように明示的にスケジュールする必要はありません。</li>
   <li><a href="/docs/current/execution/callback.html">コールバック</a>は実行時に注入され、そのコールバックには契約があります。
@@ -1158,7 +1158,7 @@ Taskが最もよく機能する方法だからです。しかし、この関数�
 <p>ここでの問題は、これらの操作が順番に実行されるということです。
 これはScalaの標準的な<code class="language-plaintext highlighter-rouge">Future</code>でも起こることで、時には望ましくない効果をもたらすこともありますが，<code class="language-plaintext highlighter-rouge">Task</code>は遅延的に評価されるためこの効果は<code class="language-plaintext highlighter-rouge">Task</code>でより顕著になります。</p>
 
-<p>しかし、<code class="language-plaintext highlighter-rouge">Task</code>には<a href="https://typelevel.org/cats/typeclasses/parallel.html">cats.Parallel</a>という実装があり、複数のタスクの評価を並行して行うことができます。
+<p>しかし、<code class="language-plaintext highlighter-rouge">Task</code>には<a href="https://typelevel.org/cats/typeclasses/parallel.html">cats.Parallel</a>という実装があり、複数のTaskの評価を並行して行うことができます。
 そのため、<code class="language-plaintext highlighter-rouge">parZip2</code>、<code class="language-plaintext highlighter-rouge">parZip3</code>などのユーティリティがあり、現在では<code class="language-plaintext highlighter-rouge">parZip6</code>まで実装されています。
 上記の例は，次のように書くことができます:</p>
 
@@ -1192,17 +1192,17 @@ Taskが最もよく機能する方法だからです。しかし、この関数�
 
 <p><a href="https://typelevel.org/cats/typeclasses/parallel.html">cats.Parallel</a> も併せてご覧ください。</p>
     
-      <h3 id="タスクのシーケンスから結果を収集する">
+      <h3 id="taskのシーケンスから結果を収集する">
         
         
-          タスクのシーケンスから結果を収集する <a href="#タスクのシーケンスから結果を収集する" class="anchor">#</a>
+          Taskのシーケンスから結果を収集する <a href="#taskのシーケンスから結果を収集する" class="anchor">#</a>
         
         
       </h3>
 
 <p><code class="language-plaintext highlighter-rouge">Task.sequence</code>は、<code class="language-plaintext highlighter-rouge">Seq[Task[A]]</code>を取り、<code class="language-plaintext highlighter-rouge">Task[Seq[A]]</code>を返します。
-このようにして、任意のタスクのシーケンスを順序付けられた効果と結果を持つタスクに変換します。
-つまり、タスクが並列に実行されることはありません。</p>
+このようにして、任意のTaskのシーケンスを順序付けられた効果と結果を持つTaskに変換します。
+つまり、Taskが並列に実行されることはありません。</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">ta</span> <span class="k">=</span> <span class="nc">Task</span> <span class="o">{</span> <span class="nf">println</span><span class="o">(</span><span class="s">"Effect1"</span><span class="o">);</span> <span class="mi">1</span> <span class="o">}</span>
 <span class="k">val</span> <span class="nv">tb</span> <span class="k">=</span> <span class="nc">Task</span> <span class="o">{</span> <span class="nf">println</span><span class="o">(</span><span class="s">"Effect2"</span><span class="o">);</span> <span class="mi">2</span> <span class="o">}</span>
@@ -1217,11 +1217,11 @@ Taskが最もよく機能する方法だからです。しかし、この関数�
 <span class="c1">//=&gt; List(1, 2)</span>
 </code></pre></div></div>
 
-<p>結果は初期シーケンスの順に並んでいるので、上の例ではまず<code class="language-plaintext highlighter-rouge">ta</code>(最初のタスク)の結果が得られ、次に<code class="language-plaintext highlighter-rouge">tb</code>(2番目のタスク)の結果が得られることが保証されていることになります。
+<p>結果は初期シーケンスの順に並んでいるので、上の例ではまず<code class="language-plaintext highlighter-rouge">ta</code>(最初のTask)の結果が得られ、次に<code class="language-plaintext highlighter-rouge">tb</code>(2番目のTask)の結果が得られることが保証されていることになります。
 また、実行自体にも順序があるので、<code class="language-plaintext highlighter-rouge">ta</code>が<code class="language-plaintext highlighter-rouge">tb</code>の前に実行され、完了します。</p>
 
 <p><code class="language-plaintext highlighter-rouge">Task.parSequence</code>は、<code class="language-plaintext highlighter-rouge">Parallel.parSequence</code>と同様に、<code class="language-plaintext highlighter-rouge">Task.sequence</code>の非決定論的なバージョンです。
-<code class="language-plaintext highlighter-rouge">Seq[Task[A]]</code>を受け取り、<code class="language-plaintext highlighter-rouge">Task[Seq[A]]</code>を返すことで、タスクのシーケンスを順番に並べられた結果のシーケンスを持つタスクに変換します。
+<code class="language-plaintext highlighter-rouge">Seq[Task[A]]</code>を受け取り、<code class="language-plaintext highlighter-rouge">Task[Seq[A]]</code>を返すことで、Taskのシーケンスを順番に並べられた結果のシーケンスを持つTaskに変換します。
 しかし、結果は順序付けられていません。つまり、並列実行の可能性があるということです。</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">scala.concurrent.duration._</span>
@@ -1380,8 +1380,8 @@ Catsのデフォルト実装は他のメソッドから派生したもので、�
 <span class="o">}</span>
 </code></pre></div></div>
 
-<p>生成される結果はタプルの<code class="language-plaintext highlighter-rouge">Either</code>で、レースに負けたもう一方のタスクに何かをする機会を与えてくれます。
-そのタスクをキャンセルするか、その結果を何らかの形で利用するか、あるいは単に無視するかをユースケースによって選択できます。</p>
+<p>生成される結果はタプルの<code class="language-plaintext highlighter-rouge">Either</code>で、レースに負けたもう一方のTaskに何かをする機会を与えてくれます。
+そのTaskをキャンセルするか、その結果を何らかの形で利用するか、あるいは単に無視するかをユースケースによって選択できます。</p>
     
       <h3 id="race-many">
         
@@ -1391,7 +1391,7 @@ Catsのデフォルト実装は他のメソッドから派生したもので、�
         
       </h3>
 
-<p><code class="language-plaintext highlighter-rouge">raceMany</code>オペレーションは、タスクのリストを入力として受け取ります。実行すると、最初のタスクが完了してレースに勝利した結果を生成します:</p>
+<p><code class="language-plaintext highlighter-rouge">raceMany</code>オペレーションは、Taskのリストを入力として受け取ります。実行すると、最初のTaskが完了してレースに勝利した結果を生成します:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">scala.concurrent.duration._</span>
 
@@ -1406,7 +1406,7 @@ Catsのデフォルト実装は他のメソッドから派生したもので、�
 </code></pre></div></div>
 
 <p>これは、Scalaの<a href="http://www.scala-lang.org/api/current/index.html#scala.concurrent.Future$@firstCompletedOf[T(futures:TraversableOnce[scala.concurrent.Future[T])(implicitexecutor:scala.concurrent.ExecutionContext):scala.concurrent.Future[T]">Future.firstCompletedOf</a> に似ています。
-<code class="language-plaintext highlighter-rouge">Task</code>を操作することを除いて、タスクがレースに勝つと他のタスクが即座にキャンセルされるので、より良いモデルになっています。</p>
+<code class="language-plaintext highlighter-rouge">Task</code>を操作することを除いて、Taskがレースに勝つと他のTaskが即座にキャンセルされるので、より良いモデルになっています。</p>
 
 <p>エラーを無視して、最初に成功した結果を待ちたい場合には<code class="language-plaintext highlighter-rouge">onErrorHandleWith</code>や<code class="language-plaintext highlighter-rouge">timeout</code>と組み合わせることができます:</p>
 
@@ -1426,9 +1426,9 @@ Catsのデフォルト実装は他のメソッドから派生したもので、�
 
 <span class="nf">println</span><span class="o">(</span><span class="nv">result</span><span class="o">.</span><span class="py">runSyncUnsafe</span><span class="o">())</span> <span class="c1">// 10をプリントする</span>
 </code></pre></div></div>
-<p>これにより、失敗したタスクは非終了になります。</p>
+<p>これにより、失敗したTaskは非終了になります。</p>
 
-<p>タイムアウトは、すべてのタスクが失敗した場合に必要です。上の例では、<code class="language-plaintext highlighter-rouge">task1</code>も失敗した場合、成功した結果が得られないことがわかっているにもかかわらず、タイムアウトが切れるのを待たなければなりません。</p>
+<p>タイムアウトは、すべてのTaskが失敗した場合に必要です。上の例では、<code class="language-plaintext highlighter-rouge">task1</code>も失敗した場合、成功した結果が得られないことがわかっているにもかかわらず、タイムアウトが切れるのを待たなければなりません。</p>
 
 <p>これを最適化するには、<code class="language-plaintext highlighter-rouge">Semaphore</code>を使った2回目の<code class="language-plaintext highlighter-rouge">race</code>を行う必要があります:</p>
 
@@ -1464,7 +1464,7 @@ Catsのデフォルト実装は他のメソッドから派生したもので、�
         
       </h3>
 
-<p><code class="language-plaintext highlighter-rouge">Task.delayExecution</code>は、その名のとおり与えられたタスクの実行を与えられた時間だけ遅らせます。</p>
+<p><code class="language-plaintext highlighter-rouge">Task.delayExecution</code>は、その名のとおり与えられたTaskの実行を与えられた時間だけ遅らせます。</p>
 
 <p>この例では、<code class="language-plaintext highlighter-rouge">source</code>の実行を3秒遅らせています:</p>
 
@@ -1850,7 +1850,7 @@ Monixは以下のようにエラーを記録します:</p>
         
       </h3>
 
-<p><code class="language-plaintext highlighter-rouge">タスク</code>タイプは単なる仕様であるため、通常は最終的な結果を得るためのあらゆるプロセスを再起動することができます。
+<p><code class="language-plaintext highlighter-rouge">Task</code>タイプは単なる仕様であるため、通常は最終的な結果を得るためのあらゆるプロセスを再起動することができます。
 また、エラーが発生した場合には必要な回数だけソースを再起動することができます:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">scala.util.Random</span>
