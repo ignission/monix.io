@@ -4,12 +4,12 @@ title: Task
 type_api: monix.eval.Task
 type_source: monix-eval/shared/src/main/scala/monix/eval/Task.scala
 description: |
-  A data type for controlling possibly lazy &amp; asynchronous computations, useful for controlling side-effects, avoiding nondeterminism and callback-hell.
+  このデータ型は非同期の計算や、副作用の制御、不確定性の回避、コールバック地獄の回避に役立ちます。
 ---
 
 ## イントロダクション
 
-タスクは、遅延する可能性のある、非同期計算を制御するためのデータ型です。副作用の制御や非決定論やコールバック地獄の回避に役立ちます。
+`Task`は遅延する可能性のある、非同期計算を制御するためのデータ型です。副作用の制御や非決定論やコールバック地獄の回避に役立ちます。
 
 importを整理します:
 
@@ -61,11 +61,11 @@ future.foreach(println)
 
 ### 設計の概要
 
-Monixの `Task` を要約します:
+Monixの`Task`を要約します:
 
 - 遅延 &amp; 非同期評価
 - 1つのプロデューサーが1つまたは複数のコンシューマーに1つの値だけをプッシュするモデル
-- [実行モデル](../execution/scheduler.md#execution-model) をきめ細かく制御することができる
+- [実行モデル](../execution/scheduler.md#execution-model)をきめ細かく制御することができる
 - `runToFuture`が呼ばれるまでは、実行やその効果は引き起こされません
 - 必ずしも別の論理スレッドで実行する必要はありません
 - 実行中の計算をキャンセルすることができます
@@ -84,13 +84,13 @@ Monixの `Task` を要約します:
 
 ### ScalaのFutureとの比較
 
-`Task`はScalaの [Future](http://docs.scala-lang.org/overviews/core/futures.html) と似ていますが違った性格を持っており、この2つのタイプは実際には補完関係にあることがわかります。  
+`Task`はScalaの [Future](http://docs.scala-lang.org/overviews/core/futures.html)と似ていますが違った性格を持っており、この2つのタイプは実際には補完関係にあることがわかります。  
 賢い人はかつてこう言いました。
 
 > "*未来は時間から切り離された価値を表す*" &mdash; Viktor Klang
 
 価値とは何か、時間とは何かを考えさせられる詩的な発想ですね。
-しかし、より重要なことは、`Future`が [値](https://en.wikipedia.org/wiki/Value_(computer_science)) であるとは言えないものの、*値になりたがっている* とは確実に言えるということです。
+しかし、より重要なことは`Future`が [値](https://en.wikipedia.org/wiki/Value_(computer_science))であるとは言えないものの、*値になりたがっている* とは確実に言えるということです。
 つまり、`Future`の参照を受け取ったとき、それを評価しようとしているどんなプロセスも、おそらくすでに始まっていて、またすでに終了しているかもしれません。
 これにより、Scalaの`Future`の動作は *先行評価* となり、`map`や`flatMap`のような演算子を呼ぶときに、どのように暗黙の実行コンテキストを取るかを考えれば、確かにその設計は助けになります。
 
@@ -107,30 +107,30 @@ Monixの `Task` を要約します:
 
 ### Scalazのタスクとの比較
 
-MonixのTaskが、[Scalaz](https://github.com/scalaz/scalaz) のTaskにインスパイアされたことは周知の事実です。Monixライブラリ全体が巨人の肩の上に立っています。  
+MonixのTaskが、[Scalaz](https://github.com/scalaz/scalaz)のTaskにインスパイアされたことは周知の事実です。Monixライブラリ全体が巨人の肩の上に立っています。  
 Monix Taskの実装が異なる点は:
 
 1. ScalazのTaskは実装の詳細を漏らしています。
    というのも、ScalazのTaskはまず*トランポリン*実行を目的としていますが、非同期実行は非同期のトランポリン境界を飛び越えることを目的としているからです。
    例えば、大きなループで現在のスレッドをブロックしないようにするには、`Task.executeAsync`を使って非同期の境界を手動で挿入しなければなりません。
    一方、MonixのTaskは、デフォルトで自動的にそれを行うようになっています。
-   これは、[Javascript](http://www.scala-js.org/) の上で実行するときに非常に便利です。
-   [協調的マルチタスク](https://en.wikipedia.org/wiki/Cooperative_multitasking) はあったほうがいいだけでなく、必要なのです。
+   これは、[Javascript](http://www.scala-js.org/)の上で実行するときに非常に便利です。
+   [協調的マルチタスク](https://en.wikipedia.org/wiki/Cooperative_multitasking)はあったほうがいいだけでなく、必要なのです。
 2. ScalazのTaskは同期/非同期の2面を持っています。これは生産者にとっては最適化のために良いことです(例えば、必要がないのになぜスレッドをフォークするのか)。
    しかし、コンシューマの視点から見ると、`def run: A`は、JavascriptやJVM上でAPIを完全にサポートできないことを意味します。
-   つまり、Scalazの`Task` は結局、同期評価やスレッドのブロックを偽装することになるのです。
-   そして、[スレッドをブロックすることは非常に安全ではありません](../best-practices/blocking.md) 
+   つまり、Scalazの`Task`は結局、同期評価やスレッドのブロックを偽装することになるのです。
+   そして、[スレッドをブロックすることは非常に安全ではありません](../best-practices/blocking.md)
 3. ScalazのTaskは、実行中の計算をキャンセルすることはできません。これは非決定論的な操作では重要です。
    例えば、`race`で競合状態を作ったときに、時間内に終わらなかった遅いタスクをキャンセルしたい場合があります。
    というのもリソースをすぐに解放しないと、残念ながら深刻なリークが発生してプロセスがクラッシュしてしまうことがあるからです。
 4. Scalazタスクは、非同期実行を扱うJavaの標準ライブラリを利用しています。
-   これはポータビリティの観点からは好ましくありません。このAPIは[Scala.js](http://www.scala-js.org/) の上ではサポートされていないからです。
+   これはポータビリティの観点からは好ましくありません。このAPIは[Scala.js](http://www.scala-js.org/)の上ではサポートされていないからです。
    
 ## 実行 (runToFuture & foreach)
 
 Taskインスタンスは、`runToFuture`によって実行されるまで何もしません。また、複数のオーバーロードがあります。
 
-`Task.runToFuture`では`ExecutionContext`を継承した[Scheduler](../execution/scheduler.md) を暗黙のパラメータとして求められます。
+`Task.runToFuture`では`ExecutionContext`を継承した[Scheduler](../execution/scheduler.md)を暗黙のパラメータとして求められます。
 しかし、ここから`Task`とScala標準の`Future`との設計の違いが出てきます。
 遅延という性格を持つ`Task`は、`runToFuture`を使った実行時にのみこの`Scheduler`を必要とし、Scalaの`Future`のようにすべての操作(`map`や`flatMap`など)で必要とされるわけではありません。
 
@@ -145,10 +145,10 @@ import monix.execution.schedulers.TestScheduler
 implicit val global = TestScheduler()
 ```
 
-**注:** [Scheduler](../execution/scheduler.md) は、非同期の境界がどのように強制されるか(あるいはされないか)を決定する設定可能な[実行モデル](../execution/scheduler.md#execution-model) を注入することができます。
+**注:** [Scheduler](../execution/scheduler.md)は、非同期の境界がどのように強制されるか(あるいはされないか)を決定する設定可能な[実行モデル](../execution/scheduler.md#execution-model)を注入することができます。
 
-最もわかりやすく慣用的な方法は、タスクを実行して[CancelableFuture]({{ page.path | api_base_url }}monix/execution/CancelableFuture.html) を返すことです。
-これは、標準的な`Future`と[Cancelable](../execution/cancelable.md) を組み合わせたものです。
+最もわかりやすく慣用的な方法は、タスクを実行して[CancelableFuture]({{ page.path | api_base_url }}monix/execution/CancelableFuture.html)を返すことです。
+これは、標準的な`Future`と[Cancelable](../execution/cancelable.md)を組み合わせたものです。
 
 ```scala mdoc:silent:nest
 import monix.eval.Task
@@ -183,7 +183,7 @@ val cancelable = task.runAsync { result =>
 cancelable.cancel()
 ```
 
-また、[Callback](../execution/callback.md) インスタンスを使って`runAsync`することもできます。
+また、[Callback](../execution/callback.md)インスタンスを使って`runAsync`することもできます。
 これはJava的なAPIのようなもので、状態を保持したい場合に便利です。
 `Callback`は内部的にも使用されています。なぜなら契約違反を防ぎ、`Try[T]`や`Either[E, A]`に特有のボクシングを回避することができるからです。  
 例:
@@ -224,7 +224,7 @@ for (result <- task) {
 
 ### 結果をブロッキングする
 
-[Monixはその哲学としてブロッキングに反対](../best-practices/blocking.md) しており、したがって`Task`にはスレッドをブロックするAPIコールは一切ありません！
+[Monixはその哲学としてブロッキングに反対](../best-practices/blocking.md)しており、したがって`Task`にはスレッドをブロックするAPIコールは一切ありません！
 
 しかし、JVMの上では時にはブロックしなければならないこともあります。
 なぜなら、標準の`Await.result`と`Await.ready`には、2つの健全な設計上の選択があるからです。
@@ -234,7 +234,7 @@ for (result <- task) {
    例えばScalaの`ForkJoinPool`がやっているように、プールにスレッドを追加することを決めるかもしれません。
 2. これらの呼び出しには、非常に明示的なタイムアウト・パラメータが必要で、それは`FiniteDuration`として指定されます。
 
-したがって、まず `runToFuture`で結果を`Future` に変換してから、結果をブロックすることができます:
+したがって、まず `runToFuture`で結果を`Future`に変換してから、結果をブロックすることができます:
 
 ```scala mdoc:silent:reset
 import monix.eval.Task
@@ -282,7 +282,7 @@ task.runSyncStep match {
 
 ## シンプルなビルダー
 
-非同期の可能性があるという性質を受け入れることができれば、`Task`は引数がない関数、Scalaの名前渡しパラメータ、`lazy val`を置き換えることができます。 また、Scala の `Future` はすべて `Task` に変換できます。
+非同期の可能性があるという性質を受け入れることができれば、`Task`は引数がない関数、Scalaの名前渡しパラメータ、`lazy val`を置き換えることができます。 また、Scala の `Future`はすべて `Task`に変換できます。
 
 ### Task.now
 
@@ -297,7 +297,7 @@ val task = Task.now { println("Effect"); "Hello!" }
 
 ### Task.eval (遅延)
 
-Task.eval`は、`Function0`と同等であり`runToFuture`で可能な限り同じスレッドで評価される関数を受け取ります([選択された実行モデル](../execution/scheduler.md#execution-model) によります)。
+`Task.eval`は、`Function0`と同等であり`runToFuture`で可能な限り同じスレッドで評価される関数を受け取ります([選択された実行モデル](../execution/scheduler.md#execution-model)によります)。
 
 ```scala mdoc:silent:nest
 val task = Task.eval { println("Effect"); "Hello!" }
@@ -318,7 +318,7 @@ task.runToFuture.foreach(println)
 
 ### Task.evalOnce
 
-`Task.evalOnce` は、Scalaでは正確に表現できない型である「lazy val」に相当します。
+`Task.evalOnce`は、Scalaでは正確に表現できない型である`lazy val`に相当します。
 `evalOnce`ビルダーは最初の実行時にメモ化を行い、評価の結果を次の実行時にも利用できるようにします。
 このビルダーは冪等性を保証し、スレッドセーフです:
 
@@ -339,7 +339,7 @@ task.runToFuture.foreach(println)
 
 ### Task.defer (延期)
 
-`Task.defer` は、タスクのファクトリを構築するためのものです。例えばこれは、`Task.eval`とほぼ同様の動作をします。
+`Task.defer`は、タスクのファクトリを構築するためのものです。例えばこれは、`Task.eval`とほぼ同様の動作をします。
 
 ```scala mdoc:silent:nest
 val task = Task.defer {
@@ -415,7 +415,7 @@ val task = Task.deferFuture {
 
 ### Task.deferFutureAction
 
-`Future` の結果を生成するコールを`Task`にラップし、必要な`ExecutionContext`として動作する`Scheduler`を注入したコールバックを提供します。
+`Future`の結果を生成するコールを`Task`にラップし、必要な`ExecutionContext`として動作する`Scheduler`を注入したコールバックを提供します。
 
 このビルダーは、暗黙の`ExecutionContext`を必要とする`Future`対応APIの使用に役立ちます。  
 以下の例を考えてみましょう:
@@ -436,7 +436,7 @@ def sumTask(list: Seq[Int])(implicit ec: ExecutionContext): Task[Int] =
 ```
 
 しかしこれは余計なお世話であるだけでなく、`Task`を使用するベストプラクティスに反しています。
-その違いは、`Task` は`runToFuture`が呼ばれたときにのみ`Scheduler`(`ExecutionContext`を継承したもの) を取るということです。
+その違いは、`Task`は`runToFuture`が呼ばれたときにのみ`Scheduler`(`ExecutionContext`を継承したもの)を取るということです。
 しかし、`Task`の参照を構築するためだけにそれを必要とするわけではありません。
 `DeferFutureAction`では、渡されたコールバックに`Scheduler`が注入されます:
 
@@ -453,7 +453,7 @@ Voilà!(ほらできました)。もう暗黙のパラメータ`ExecutionContext
 
 `Task.executeAsync`は、実行時に(論理)スレッドのフォークを強制することで、非同期の境界を確保します。
 時には本当に無駄なことをしていて、非同期の境界が発生することを保証したいことがあります。
-デフォルトでは[実行モデル](../execution/scheduler.md#execution-model) は最初は現在のスレッドでの実行を好みます。
+デフォルトでは[実行モデル](../execution/scheduler.md#execution-model)は最初は現在のスレッドでの実行を好みます。
 
 これにより、私たちのタスクが非同期に実行されることが保証されます:
 
@@ -462,7 +462,7 @@ val task = Task.eval("Hello!").executeAsync
 ```
 
 `ExecuteOn`では、使用する代替の`Scheduler`を指定することができます。
-つまり、`Task` の実行ループでは常に利用できる`Scheduler`が使用されますが、特定の操作では別のスケジューラに処理を振り分けたい場合があります。
+つまり、`Task`の実行ループでは常に利用できる`Scheduler`が使用されますが、特定の操作では別のスケジューラに処理を振り分けたい場合があります。
 例えば、ブロッキングI/O操作を別のスレッドプールで実行したい場合などです。
 
 2つのスレッドプールがあるとします:
@@ -576,7 +576,7 @@ error.runAsync(result => println(result))
 
 ### Task.never
 
-`Task.never` は、決して完了しない`Task`インスタンスを返します:
+`Task.never`は、決して完了しない`Task`インスタンスを返します:
 
 ```scala mdoc:silent:nest
 import scala.concurrent.duration._
@@ -638,7 +638,7 @@ def evalDelayed[A](delay: FiniteDuration)
 }
 ```
 
-そして、[Task.fromFuture](#taskfromfuture) を実装する場合の可能性として、以下のようなものを自分自身で実装します:
+そして、[Task.fromFuture](#taskfromfuture)を実装する場合の可能性として、以下のようなものを自分自身で実装します:
 
 ```scala mdoc:silent:nest
 import monix.execution.Cancelable
@@ -663,9 +663,9 @@ def fromFuture[A](f: Future[A]): Task[A] =
 いくつかの注意点:
 
 - このビルダーで作成されたタスクは、非同期に(別の論理スレッドで)実行されることが保証されています。
-- [Scheduler](../execution/scheduler.md) が注入され、それによって非同期実行のために物事をスケジュールしたり、遅延させたりすることができます。
+- [Scheduler](../execution/scheduler.md)が注入され、それによって非同期実行のために物事をスケジュールしたり、遅延させたりすることができます。
 - しかし、前述のとおりこのコールバックはすでに非同期に実行されるので、用意された`Scheduler`で実行するように明示的にスケジュールする必要はありません。
-- [コールバック](../execution/callback.md) は実行時に注入され、そのコールバックには契約があります。
+- [コールバック](../execution/callback.md)は実行時に注入され、そのコールバックには契約があります。
   具体的には、`onSuccess`、`onError`、`apply`を一度だけ実行する必要があります。
 - 実行された処理が本当に時間内にキャンセルできない場合は、`Cancelable.empty`を返しても構いませんが、
   できれば実行をキャンセルするような可能性があれば`Cancelable`を返すように努めるべきです。
@@ -673,7 +673,7 @@ def fromFuture[A](f: Future[A]): Task[A] =
 
 ## メモ化 
 
-[Task#memoize]({{ page.path | api_base_url }}monix/eval/Task.html#memoize:monix.eval.Task[A]) メソッドは、
+[Task#memoize]({{ page.path | api_base_url }}monix/eval/Task.html#memoize:monix.eval.Task[A])メソッドは、
 任意の`Task`を受け取り、最初の`runToFuture`でメモ化を適用することができます:
 
 1. 冪等性が保証されている場合、`runToFuture`を複数回呼び出しても、1回呼び出したのと同じ効果が得られます。
@@ -758,7 +758,7 @@ def fib(cycles: Int, a: BigInt, b: BigInt): BigInt = {
 }
 ```
 
-これは末尾再帰的であることが必要で、そのためには[@tailrec](http://www.scala-lang.org/api/current/index.html#scala.annotation.tailrec) アノテーションを使用していますが，これはScalaの標準ライブラリにあります。
+これは末尾再帰的であることが必要で、そのためには[@tailrec](http://www.scala-lang.org/api/current/index.html#scala.annotation.tailrec)アノテーションを使用していますが，これはScalaの標準ライブラリにあります。
 そして，もしこれを`Task`で記述すると、次のような実装が可能です:
 
 ```scala mdoc:silent:nest
@@ -812,7 +812,7 @@ def fib(cycles: Int, a: BigInt, b: BigInt): Task[BigInt] =
 ```
 
 繰り返しになりますが、これはスタックセーフで一定量のメモリを使用します。
-そして何よりも [実行モデル](../execution/scheduler.md#execution-model) のおかげで、デフォルトではこれらのループは現在のスレッドを永遠にブロックしません。バッチでの実行を好みます。
+そして何よりも [実行モデル](../execution/scheduler.md#execution-model)のおかげで、デフォルトではこれらのループは現在のスレッドを永遠にブロックしません。バッチでの実行を好みます。
 
 ### 並列性 (cats.Parallel)
 
@@ -836,7 +836,7 @@ val aggregate = for {
 ここでの問題は、これらの操作が順番に実行されるということです。
 これはScalaの標準的な`Future`でも起こることで、時には望ましくない効果をもたらすこともありますが，`Task`は遅延的に評価されるためこの効果は`Task`でより顕著になります。
 
-しかし、`Task`には[cats.Parallel](https://typelevel.org/cats/typeclasses/parallel.html) という実装があり、複数のタスクの評価を並行して行うことができます。
+しかし、`Task`には[cats.Parallel](https://typelevel.org/cats/typeclasses/parallel.html)という実装があり、複数のタスクの評価を並行して行うことができます。
 そのため、`parZip2`、`parZip3`などのユーティリティがあり、現在では`parZip6`まで実装されています。
 上記の例は，次のように書くことができます:
 
@@ -853,7 +853,7 @@ val aggregate =
 ```
 
 タプルへのボックス化を避けるために、`parMap2`を使うこともできます。  
-`parMap3` ... `parMap6`:
+`parMap3`... `parMap6`:
 
 ```scala mdoc:silent:nest
 Task.parMap3(locationTask, phoneTask, addressTask) {
@@ -1133,7 +1133,7 @@ val delayed = source.delayExecution(3.seconds)
 delayed.runToFuture.foreach(println)
 ```
 
-また、遅延の代わりに、別の `Task` を実行開始のシグナルとして使用したい場合もあります。  
+また、遅延の代わりに、別の `Task`を実行開始のシグナルとして使用したい場合もあります。  
 上の例と同じです:
 
 ```scala mdoc:silent:nest
@@ -1216,7 +1216,7 @@ withFinishCb.runToFuture.foreach(println)
 
 ### リアクティブ・パブリッシャーへの変換
 
-Monixが[Reactive Streams](http://www.reactive-streams.org/) の仕様に統合されていることをご存知ですか？
+Monixが[Reactive Streams](http://www.reactive-streams.org/)の仕様に統合されていることをご存知ですか？
 
 さて、`Task`は`org.reactivestreams.Publisher`として見ることができます。サブスクリプション時に正確に1つのイベントを発行し、その後停止します。  
 そして、私たちは任意の`Task`を直接そのようなパブリッシャーに変換することができます:
@@ -1261,13 +1261,13 @@ publisher.subscribe(new Subscriber[Int] {
 
 `Task`はエラー処理を非常に重要視しています。
 ほら、*観察* についてこんな有名な話があるじゃないですか。  
-[思考実験](https://en.wikipedia.org/wiki/If_a_tree_falls_in_a_forest) :
+[思考実験](https://en.wikipedia.org/wiki/If_a_tree_falls_in_a_forest):
 
 > "*森の中で木が倒れても、周りにそれを聞く人がいなければ
 > その木は音を発しますか？*"
 
 これは、エラー処理に非常によく当てはまります。非同期プロセスでエラーが発生しても、それを聞く人がいなければキャッチしてログに残したり、回復したりすることはしません。
-そして得られるのは[非決定論](https://en.wikipedia.org/wiki/Nondeterministic_algorithm) のようなもので、エラーのヒントはありません。
+そして得られるのは[非決定論](https://en.wikipedia.org/wiki/Nondeterministic_algorithm)のようなもので、エラーのヒントはありません。
 
 Monixは常に発生したエラーをキャッチしてシグナルを送るか、少なくともログに記録します。
 何らかの理由でシグナリングができない場合(コールバックがすでに呼び出されているなど)、ロギングは提供されている`Scheduler.reportFailure`を使って行われます。
@@ -1316,7 +1316,7 @@ task.runAsync { r =>
 //=>    ....
 ```
 
-同様に`Task.create`を使用した場合、Monixはエラーを捕捉しようとしますが、提供されたコールバックで何が起こったのかわからなかったため契約違反となるエラーを通知できません。([Callback](../execution/callback.md)を参照)  
+同様に`Task.create`を使用した場合、Monixはエラーを捕捉しようとしますが、提供されたコールバックで何が起こったのかわからなかったため契約違反となるエラーを通知できません。([Callback](../execution/callback.md)を参照) 
 Monixは以下のようにエラーを記録します:
 
 ```scala mdoc:silent:nest
@@ -1343,8 +1343,8 @@ future.onComplete(r => println(r))
 
 ### エラーロギングのオーバーライド
 
-[Scheduler](../execution/scheduler.md) の記事には、独自のロジックで独自の`Scheduler`インスタンスを構築するためのレシピが掲載されています。
-しかしここでは、そのような`Scheduler`を構築するための簡単なスニペットを紹介します。標準的な[SLF4J](http://www.slf4j.org/) のようなライブラリを使って、ロギングを行います:
+[Scheduler](../execution/scheduler.md)の記事には、独自のロジックで独自の`Scheduler`インスタンスを構築するためのレシピが掲載されています。
+しかしここでは、そのような`Scheduler`を構築するための簡単なスニペットを紹介します。標準的な[SLF4J](http://www.slf4j.org/)のようなライブラリを使って、ロギングを行います:
 
 ```scala mdoc:silent:nest
 import monix.execution.Scheduler
