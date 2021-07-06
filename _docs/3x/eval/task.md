@@ -14,7 +14,7 @@ description: |
 importを整理します:
 
 ```scala mdoc:silent
-// タスクを評価するためには、Schedulerが必要です
+// Taskを評価するためには、Schedulerが必要です
 import monix.execution.Scheduler.Implicits.global
 
 // キャンセル可能なFuture型
@@ -35,10 +35,10 @@ implicit val global = TestScheduler()
 ```scala mdoc:silent:nest
 // sumを実行すると、(applyのセマンティクスにより)別のスレッドで発生します
 // しかし、このインスタンスの構築時には何も起こりません
-// この表現は純粋で、単なる仕様です。タスクはデフォルトでは遅延動作をします ;-)
+// この表現は純粋で、単なる仕様です。Taskはデフォルトでは遅延動作をします ;-)
 val task = Task { 1 + 1 }
 
-// タスクはrunToFutureでのみ評価されます
+// TaskはrunToFutureでのみ評価されます
 // コールバックスタイル:
 val cancelable = task.runAsync { result =>
   result match {
@@ -105,7 +105,7 @@ Monixの`Task`を要約します:
 というのも、どのような操作を行っても実装は最終的にスレッドプールに`Runnable`インスタンスを送ることになり、結果が各ステップで常にメモ化されるからです。
 一方、`Task`は同期的なバッチで実行することができます。
 
-### Scalazのタスクとの比較
+### ScalazのTaskとの比較
 
 MonixのTaskが、[Scalaz](https://github.com/scalaz/scalaz)のTaskにインスパイアされたことは周知の事実です。Monixライブラリ全体が巨人の肩の上に立っています。  
 Monix Taskの実装が異なる点は:
@@ -121,9 +121,9 @@ Monix Taskの実装が異なる点は:
    つまり、Scalazの`Task`は結局、同期評価やスレッドのブロックを偽装することになるのです。
    そして、[スレッドをブロックすることは非常に安全ではありません](../best-practices/blocking.md)
 3. ScalazのTaskは、実行中の計算をキャンセルすることはできません。これは非決定論的な操作では重要です。
-   例えば、`race`で競合状態を作ったときに、時間内に終わらなかった遅いタスクをキャンセルしたい場合があります。
+   例えば、`race`で競合状態を作ったときに、時間内に終わらなかった遅いTaskをキャンセルしたい場合があります。
    というのもリソースをすぐに解放しないと、残念ながら深刻なリークが発生してプロセスがクラッシュしてしまうことがあるからです。
-4. Scalazタスクは、非同期実行を扱うJavaの標準ライブラリを利用しています。
+4. ScalazのTaskは、非同期実行を扱うJavaの標準ライブラリを利用しています。
    これはポータビリティの観点からは好ましくありません。このAPIは[Scala.js](http://www.scala-js.org/)の上ではサポートされていないからです。
    
 ## 実行 (runToFuture & foreach)
@@ -147,7 +147,7 @@ implicit val global = TestScheduler()
 
 **注:** [Scheduler](../execution/scheduler.md)は、非同期の境界がどのように強制されるか(あるいはされないか)を決定する設定可能な[実行モデル](../execution/scheduler.md#execution-model)を注入することができます。
 
-最もわかりやすく慣用的な方法は、タスクを実行して[CancelableFuture]({{ page.path | api_base_url }}monix/execution/CancelableFuture.html)を返すことです。
+最もわかりやすく慣用的な方法は、Taskを実行して[CancelableFuture]({{ page.path | api_base_url }}monix/execution/CancelableFuture.html)を返すことです。
 これは、標準的な`Future`と[Cancelable](../execution/cancelable.md)を組み合わせたものです。
 
 ```scala mdoc:silent:nest
@@ -270,7 +270,7 @@ val task = Task.eval("Hello!")
 
 task.runSyncStep match {
   case Left(task) =>
-    // このタスクは非同期実行を強く望んでいるのでうまくいきません
+    // このTaskは非同期実行を強く望んでいるのでうまくいきません
     task.runToFuture.foreach(r => println(s"Async: $r"))
   case Right(result) =>
     println(s"Got lucky: $result")
@@ -339,7 +339,7 @@ task.runToFuture.foreach(println)
 
 ### Task.defer (延期)
 
-`Task.defer`は、タスクのファクトリを構築するためのものです。例えばこれは、`Task.eval`とほぼ同様の動作をします。
+`Task.defer`は、Taskのファクトリを構築するためのものです。例えばこれは、`Task.eval`とほぼ同様の動作をします。
 
 ```scala mdoc:silent:nest
 val task = Task.defer {
@@ -455,7 +455,7 @@ Voilà!(ほらできました)。もう暗黙のパラメータ`ExecutionContext
 時には本当に無駄なことをしていて、非同期の境界が発生することを保証したいことがあります。
 デフォルトでは[実行モデル](../execution/scheduler.md#execution-model)は最初は現在のスレッドでの実行を好みます。
 
-これにより、私たちのタスクが非同期に実行されることが保証されます:
+これにより、私たちのTaskが非同期に実行されることが保証されます:
 
 ```scala mdoc:silent:nest
 val task = Task.eval("Hello!").executeAsync
@@ -662,7 +662,7 @@ def fromFuture[A](f: Future[A]): Task[A] =
 
 いくつかの注意点:
 
-- このビルダーで作成されたタスクは、非同期に(別の論理スレッドで)実行されることが保証されています。
+- このビルダーで作成されたTaskは、非同期に(別の論理スレッドで)実行されることが保証されています。
 - [Scheduler](../execution/scheduler.md)が注入され、それによって非同期実行のために物事をスケジュールしたり、遅延させたりすることができます。
 - しかし、前述のとおりこのコールバックはすでに非同期に実行されるので、用意された`Scheduler`で実行するように明示的にスケジュールする必要はありません。
 - [コールバック](../execution/callback.md)は実行時に注入され、そのコールバックには契約があります。
@@ -836,7 +836,7 @@ val aggregate = for {
 ここでの問題は、これらの操作が順番に実行されるということです。
 これはScalaの標準的な`Future`でも起こることで、時には望ましくない効果をもたらすこともありますが，`Task`は遅延的に評価されるためこの効果は`Task`でより顕著になります。
 
-しかし、`Task`には[cats.Parallel](https://typelevel.org/cats/typeclasses/parallel.html)という実装があり、複数のタスクの評価を並行して行うことができます。
+しかし、`Task`には[cats.Parallel](https://typelevel.org/cats/typeclasses/parallel.html)という実装があり、複数のTaskの評価を並行して行うことができます。
 そのため、`parZip2`、`parZip3`などのユーティリティがあり、現在では`parZip6`まで実装されています。
 上記の例は，次のように書くことができます:
 
@@ -873,11 +873,11 @@ import cats.syntax.all._
 
 [cats.Parallel](https://typelevel.org/cats/typeclasses/parallel.html) も併せてご覧ください。
 
-### タスクのシーケンスから結果を収集する
+### Taskのシーケンスから結果を収集する
 
 `Task.sequence`は、`Seq[Task[A]]`を取り、`Task[Seq[A]]`を返します。
-このようにして、任意のタスクのシーケンスを順序付けられた効果と結果を持つタスクに変換します。
-つまり、タスクが並列に実行されることはありません。
+このようにして、任意のTaskのシーケンスを順序付けられた効果と結果を持つTaskに変換します。
+つまり、Taskが並列に実行されることはありません。
 
 ```scala mdoc:silent:nest
 val ta = Task { println("Effect1"); 1 }
@@ -893,11 +893,11 @@ list.runToFuture.foreach(println)
 //=> List(1, 2)
 ```
 
-結果は初期シーケンスの順に並んでいるので、上の例ではまず`ta`(最初のタスク)の結果が得られ、次に`tb`(2番目のタスク)の結果が得られることが保証されていることになります。
+結果は初期シーケンスの順に並んでいるので、上の例ではまず`ta`(最初のTask)の結果が得られ、次に`tb`(2番目のTask)の結果が得られることが保証されていることになります。
 また、実行自体にも順序があるので、`ta`が`tb`の前に実行され、完了します。
 
 `Task.parSequence`は、`Parallel.parSequence`と同様に、`Task.sequence`の非決定論的なバージョンです。
-`Seq[Task[A]]`を受け取り、`Task[Seq[A]]`を返すことで、タスクのシーケンスを順番に並べられた結果のシーケンスを持つタスクに変換します。
+`Seq[Task[A]]`を受け取り、`Task[Seq[A]]`を返すことで、Taskのシーケンスを順番に並べられた結果のシーケンスを持つTaskに変換します。
 しかし、結果は順序付けられていません。つまり、並列実行の可能性があるということです。
 
 ```scala mdoc:silent:nest
@@ -1035,12 +1035,12 @@ val race = Task.racePair(ta, tb).runToFuture.foreach {
 }
 ```
 
-生成される結果はタプルの`Either`で、レースに負けたもう一方のタスクに何かをする機会を与えてくれます。
-そのタスクをキャンセルするか、その結果を何らかの形で利用するか、あるいは単に無視するかをユースケースによって選択できます。
+生成される結果はタプルの`Either`で、レースに負けたもう一方のTaskに何かをする機会を与えてくれます。
+そのTaskをキャンセルするか、その結果を何らかの形で利用するか、あるいは単に無視するかをユースケースによって選択できます。
 
 ### Race Many
 
-`raceMany`オペレーションは、タスクのリストを入力として受け取ります。実行すると、最初のタスクが完了してレースに勝利した結果を生成します:
+`raceMany`オペレーションは、Taskのリストを入力として受け取ります。実行すると、最初のTaskが完了してレースに勝利した結果を生成します:
 
 ```scala mdoc:silent:nest
 import scala.concurrent.duration._
@@ -1056,7 +1056,7 @@ val tb = Task(10).delayExecution(1.second)
 ```
 
 これは、Scalaの[Future.firstCompletedOf](http://www.scala-lang.org/api/current/index.html#scala.concurrent.Future$@firstCompletedOf[T(futures:TraversableOnce[scala.concurrent.Future[T])(implicitexecutor:scala.concurrent.ExecutionContext):scala.concurrent.Future[T]) に似ています。
-`Task`を操作することを除いて、タスクがレースに勝つと他のタスクが即座にキャンセルされるので、より良いモデルになっています。
+`Task`を操作することを除いて、Taskがレースに勝つと他のTaskが即座にキャンセルされるので、より良いモデルになっています。
 
 エラーを無視して、最初に成功した結果を待ちたい場合には`onErrorHandleWith`や`timeout`と組み合わせることができます:
 
@@ -1077,9 +1077,9 @@ val result: Task[Int] = Task.raceMany(tasks.map(_.onErrorHandleWith(_ => Task.ne
 
 println(result.runSyncUnsafe()) // 10をプリントする
 ```
-これにより、失敗したタスクは非終了になります。
+これにより、失敗したTaskは非終了になります。
 
-タイムアウトは、すべてのタスクが失敗した場合に必要です。上の例では、`task1`も失敗した場合、成功した結果が得られないことがわかっているにもかかわらず、タイムアウトが切れるのを待たなければなりません。
+タイムアウトは、すべてのTaskが失敗した場合に必要です。上の例では、`task1`も失敗した場合、成功した結果が得られないことがわかっているにもかかわらず、タイムアウトが切れるのを待たなければなりません。
 
 これを最適化するには、`Semaphore`を使った2回目の`race`を行う必要があります:
 
@@ -1117,7 +1117,7 @@ implicit val global = TestScheduler()
 
 ### 遅延実行
 
-`Task.delayExecution`は、その名のとおり与えられたタスクの実行を与えられた時間だけ遅らせます。
+`Task.delayExecution`は、その名のとおり与えられたTaskの実行を与えられた時間だけ遅らせます。
 
 この例では、`source`の実行を3秒遅らせています:
 
@@ -1464,7 +1464,7 @@ val recovered = source.onErrorRecover {
 
 ### エラーのときに再起動する
 
-`タスク`タイプは単なる仕様であるため、通常は最終的な結果を得るためのあらゆるプロセスを再起動することができます。
+`Task`タイプは単なる仕様であるため、通常は最終的な結果を得るためのあらゆるプロセスを再起動することができます。
 また、エラーが発生した場合には必要な回数だけソースを再起動することができます:
 
 ```scala mdoc:silent:nest
