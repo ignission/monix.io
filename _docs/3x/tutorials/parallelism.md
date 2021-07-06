@@ -1,8 +1,8 @@
 ---
 layout: docs3x
-title: Parallel Processing
+title: 並列処理 
 description: |
-  Recipes for achieving parallelism
+  並列化のためのレシピ
 ---
 
 Monixでは、ユースケースに応じて複数の並列化の方法が用意されています。

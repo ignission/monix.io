@@ -1,7 +1,7 @@
 ---
 layout: docs3x
-title: "Best Practice: Should Not Block Threads"
-description: "Blocking threads is incredibly error prone. And if you must block, do so with Scala's BlockContext and with explicit timeouts."
+title: "ベストプラクティス: スレッドをブロックしてはいけない"
+description: "スレッドをブロックすることは、信じられないほどエラーを起こしやすいです。どうしてもブロックしたい場合は、ScalaのBlockContextを使って明示的にタイムアウトを指定するようにしましょう。"
 ---
 
 選択肢があるのであれば、絶対にスレッドをブロックしてはいけません。例えば、次のようなコードです:
