@@ -30,15 +30,15 @@
   <meta content="サーキットブレーカー &amp;mdash; Monix" property="og:title">
   <meta content="分散システムの安定性を確保し、連鎖的な障害を防ぐためのデータタイプ。" property="og:description">
   <meta content="https://monix.io/docs/current/catnap/circuit-breaker.html" property="og:url">
-  <meta content="2021-07-07T13:46:55+00:00" property="article:modified_time">
+  <meta content="2021-07-07T13:48:49+00:00" property="article:modified_time">
     
   <meta content="article" property="og:type">
   <meta property="og:image" content="https://monix.io/public/images/monix-logo.png" />
   <meta property="og:image:secure_url" content="https://monix.io/public/images/monix-logo.png" />
   <!-- CSS -->
-  <link rel="stylesheet" href="/public/css/all.css?1625665764342843925">
+  <link rel="stylesheet" href="/public/css/all.css?1625665869539466926">
   <!--[if lt IE 9]>
-  <link rel="stylesheet" href="/public/css/forkme.ie.css?1625665764342843925">
+  <link rel="stylesheet" href="/public/css/forkme.ie.css?1625665869539466926">
   <![endif]-->
 
   <link rel="stylesheet" href="//fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
@@ -154,13 +154,13 @@
 
 <p>例として、外部サービスと通信するウェブアプリケーションがあるとします。
 外部サービスはキャパシティをオーバーして、データベースが負荷に耐えられなくなったケースを考えます。
-そうすると外部サービスからエラーが返ってくるのに長い時間がかかったりしますよね。
+そうなると外部サービスからエラーが返ってくるのに長い時間がかかったりしますよね。
 ユーザーはフォームの送信に非常に時間がかかるため、ウェブアプリケーションがハングしていると感じるでしょう。
-ユーザーは不安に思ったので、既に実行されているリクエストにさらにリクエストを追加します。
+ユーザーは不安に思ったので、既に実行されているリクエストに加えてさらにリクエストを送信します。
 その結果、リソースの枯渇によるウェブアプリケーションの障害が発生します。
 これは、通信先の問題と関係なくすべてのユーザーに影響してしまいます。</p>
 
-<p>外部サービスの呼び出しにサーキットブレーカーを導入すると、リクエストが早く失敗し始め、何かが間違っていてリクエストを更新する必要がないことをユーザーに知らせます。
+<p>外部サービスの呼び出しにサーキットブレーカーを導入すると、リクエストが早く失敗し始め、何かが間違っていてリクエストを再送信する必要がないことをユーザーに知らせます。
 これはまた、障害の発生は外部サービスに依存した機能を使用しているユーザーだけに限定され、他のユーザーはもはや影響を受けません。
 サーキットブレーカーは外部サービスに依存している機能の一部を利用できないようにしたり、遮断中にはキャッシュされたコンテンツを表示したりすることができます。</p>
     
