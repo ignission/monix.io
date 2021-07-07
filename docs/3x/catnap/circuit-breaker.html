@@ -30,15 +30,15 @@
   <meta content="サーキットブレーカー &amp;mdash; Monix" property="og:title">
   <meta content="分散システムの安定性を確保し、連鎖的な障害を防ぐためのデータタイプ。" property="og:description">
   <meta content="https://monix.io/docs/3x/catnap/circuit-breaker.html" property="og:url">
-  <meta content="2021-07-07T13:21:50+00:00" property="article:modified_time">
+  <meta content="2021-07-07T13:46:55+00:00" property="article:modified_time">
     
   <meta content="article" property="og:type">
   <meta property="og:image" content="https://monix.io/public/images/monix-logo.png" />
   <meta property="og:image:secure_url" content="https://monix.io/public/images/monix-logo.png" />
   <!-- CSS -->
-  <link rel="stylesheet" href="/public/css/all.css?1625664311258440621">
+  <link rel="stylesheet" href="/public/css/all.css?1625665764342843925">
   <!--[if lt IE 9]>
-  <link rel="stylesheet" href="/public/css/forkme.ie.css?1625664311258440621">
+  <link rel="stylesheet" href="/public/css/forkme.ie.css?1625665764342843925">
   <![endif]-->
 
   <link rel="stylesheet" href="//fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
@@ -142,7 +142,7 @@
 
   </nav>
 
-  <p><code class="language-plaintext highlighter-rouge">CircuitBreaker</code>は分散システムの安定性を高め、連鎖的な障害を防ぐために使用されます。</p>
+  <p><code class="language-plaintext highlighter-rouge">CircuitBreaker</code>は、分散システムの安定性を高め、連鎖的な障害を防ぐために使用されます。</p>
     
       <h2 id="目的">
         
@@ -160,9 +160,9 @@
 その結果、リソースの枯渇によるウェブアプリケーションの障害が発生します。
 これは、通信先の問題と関係なくすべてのユーザーに影響してしまいます。</p>
 
-<p>外部サービスの呼び出しにサーキットブレーカーを導入すると、リクエストが早く失敗し始め何かが間違っていてリクエストを更新する必要がないことをユーザーに知らせます。
+<p>外部サービスの呼び出しにサーキットブレーカーを導入すると、リクエストが早く失敗し始め、何かが間違っていてリクエストを更新する必要がないことをユーザーに知らせます。
 これはまた、障害の発生は外部サービスに依存した機能を使用しているユーザーだけに限定され、他のユーザーはもはや影響を受けません。
-サーキットブレーカーは外部サービスに依存している機能の一部を利用できないようにしたり、遮断中にキャッシュされたコンテンツを表示したりすることができます。</p>
+サーキットブレーカーは外部サービスに依存している機能の一部を利用できないようにしたり、遮断中にはキャッシュされたコンテンツを表示したりすることができます。</p>
     
       <h2 id="仕組み">
         
@@ -184,14 +184,14 @@
   </li>
   <li><code class="language-plaintext highlighter-rouge">Open</code>: サーキットブレーカーがすべてのタスクを拒否する
     <ul>
-      <li>すべてのタスクは<code class="language-plaintext highlighter-rouge">ExecutionRejectedException</code>ですぐに失敗します。</li>
-      <li>設定された<code class="language-plaintext highlighter-rouge">resetTimeout</code>の後、サーキットブレーカーは<code class="language-plaintext highlighter-rouge">HalfOpen</code>状態になり、接続テストのための1つのタスクが実行されます。</li>
+      <li>すべてのタスクは<code class="language-plaintext highlighter-rouge">ExecutionRejectedException</code>で速やかに失敗します。</li>
+      <li>設定された<code class="language-plaintext highlighter-rouge">resetTimeout</code>の後、サーキットブレーカーは<code class="language-plaintext highlighter-rouge">HalfOpen</code>状態になり、接続テストのために1つのタスクが実行されます。</li>
     </ul>
   </li>
   <li><code class="language-plaintext highlighter-rouge">HalfOpen</code>: サーキットブレーカーは、接続をテストするためにリセットを試みて、タスクを通過させていきます。
     <ul>
-      <li><code class="language-plaintext highlighter-rouge">Open</code>の期限が切れたときの最初のタスクは、高速で失敗することなく実行されます。 サーキットブレーカーが<code class="language-plaintext highlighter-rouge">HalfOpen</code>になる前の状態です。</li>
-      <li><code class="language-plaintext highlighter-rouge">HalfOpen</code>状態で試行されたすべてのタスクは、<code class="language-plaintext highlighter-rouge">Open</code>状態と同様に例外を除いて高速に失敗します。</li>
+      <li><code class="language-plaintext highlighter-rouge">Open</code>の期限が切れたときの最初のタスクは、失敗することなく速やかに実行されます。サーキットブレーカーが<code class="language-plaintext highlighter-rouge">HalfOpen</code>になる前の状態です。</li>
+      <li><code class="language-plaintext highlighter-rouge">HalfOpen</code>状態で試行されたすべてのタスクは、<code class="language-plaintext highlighter-rouge">Open</code>状態と同様に例外的に失敗します。</li>
       <li>そのタスクが成功すると、ブレーカーはリセットされ、<code class="language-plaintext highlighter-rouge">resetTimeout</code>と<code class="language-plaintext highlighter-rouge">failures</code>カウントも初期値にリセットされます。</li>
       <li>タスクの試行が失敗するとブレーカーは再び<code class="language-plaintext highlighter-rouge">Open</code>状態になります(設定された<code class="language-plaintext highlighter-rouge">maxResetTimeout</code>を上限に、<code class="language-plaintext highlighter-rouge">resetTimeout</code>に指数関数的なバックオフ係数が乗じられます)。</li>
     </ul>
@@ -281,7 +281,7 @@
     <span class="nf">println</span><span class="o">(</span><span class="s">"HalfOpenに切り替わり、テストのために1つのタスクだけ受け付ける"</span><span class="o">)</span>
   <span class="o">},</span>
   <span class="n">onOpen</span> <span class="k">=</span> <span class="nc">Task</span> <span class="o">{</span>
-    <span class="nf">println</span><span class="o">(</span><span class="s">"Openに切り替わると、その後10秒間すべてのタスクが拒否される、"</span><span class="o">)</span>
+    <span class="nf">println</span><span class="o">(</span><span class="s">"Openに切り替わると、その後10秒間すべてのタスクが拒否される"</span><span class="o">)</span>
   <span class="o">}</span>
 <span class="o">)</span>
 </code></pre></div></div>
@@ -328,9 +328,9 @@
 
 <div class="extra">
   <p>このデータタイプは、<a href="http://doc.akka.io/docs/akka/current/common/circuitbreaker.html">Akkaのサーキットブレーカー</a>からヒントを得ています。
-実装やAPIは同じではありませんが 目的や使用しているステートマシンは似ています。</p>
+実装やAPIは同じではありませんが、目的や使用しているステートマシンは似ています。</p>
 
-  <p>このドキュメントには、Akkaからのコピーペーストされたフラグメントも含まれています。
+  <p>このドキュメントには、Akkaからコピーペーストされた内容も含まれています。
 クレジットが必要な場合はクレジットを表示してください 😉</p>
 </div>
 
