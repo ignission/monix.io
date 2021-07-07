@@ -1,73 +1,49 @@
 ---
 layout: docs3x
-title: Circuit Breaker
+title: サーキットブレーカー
 type_api: monix.catnap.CircuitBreaker
 type_source: monix-catnap/shared/src/main/scala/monix/catnap/CircuitBreaker.scala
 description: |
-  A data type for providing stability and prevent cascading failures in distributed systems.
+  分散システムの安定性を確保し、連鎖的な障害を防ぐためのデータタイプ。
 ---
 
-The `CircuitBreaker` is used to provide stability and prevent
-cascading failures in distributed systems.
+`CircuitBreaker`は分散システムの安定性を高め、連鎖的な障害を防ぐために使用されます。
 
-## Purpose
+## 目的
 
-As an example, we have a web application interacting with a remote
-third party web service. Let's say the third party has oversold their
-capacity and their database melts down under load. Assume that the
-database fails in such a way that it takes a very long time to hand
-back an error to the third party web service. This in turn makes calls
-fail after a long period of time. Back to our web application, the
-users have noticed that their form submissions take much longer
-seeming to hang. Well the users do what they know to do which is use
-the refresh button, adding more requests to their already running
-requests. This eventually causes the failure of the web application
-due to resource exhaustion. This will affect all users, even those who
-are not using functionality dependent on this third party web service.
+例として、外部サービスと通信するウェブアプリケーションがあるとします。
+外部サービスはキャパシティをオーバーして、データベースが負荷に耐えられなくなったケースを考えます。
+そうすると外部サービスからエラーが返ってくるのに長い時間がかかったりしますよね。
+ユーザーはフォームの送信に非常に時間がかかるため、ウェブアプリケーションがハングしていると感じるでしょう。
+ユーザーは不安に思ったので、既に実行されているリクエストにさらにリクエストを追加します。
+その結果、リソースの枯渇によるウェブアプリケーションの障害が発生します。
+これは、通信先の問題と関係なくすべてのユーザーに影響してしまいます。
 
-Introducing circuit breakers on the web service call would cause the
-requests to begin to fail-fast, letting the user know that something
-is wrong and that they need not refresh their request. This also
-confines the failure behavior to only those users that are using
-functionality dependent on the third party, other users are no longer
-affected as there is no resource exhaustion. Circuit breakers can also
-allow savvy developers to mark portions of the site that use the
-functionality unavailable, or perhaps show some cached content as
-appropriate while the breaker is open.
+外部サービスの呼び出しにサーキットブレーカーを導入すると、リクエストが早く失敗し始め何かが間違っていてリクエストを更新する必要がないことをユーザーに知らせます。
+これはまた、障害の発生は外部サービスに依存した機能を使用しているユーザーだけに限定され、他のユーザーはもはや影響を受けません。
+サーキットブレーカーは外部サービスに依存している機能の一部を利用できないようにしたり、遮断中にキャッシュされたコンテンツを表示したりすることができます。
 
-## How it Works
+## 仕組み
 
-The circuit breaker models a concurrent state machine that can be in
-any of these 3 states:
+サーキットブレーカーは、以下の3つのいずれかの状態になることができる並行ステートマシンをモデル化しています:
 
-1. `Closed`: During normal operations or when the `CircuitBreaker` starts
-  - Exceptions increment the `failures` counter
-  - Successes reset the `failures` counter to zero  
-  - When the `failures` counter reaches the `maxFailures` threshold,
-    the breaker is tripped into the `Open` state
-2. `Open`: The circuit breaker rejects all tasks
-  - all tasks fail fast with `ExecutionRejectedException`
-  - after the configured `resetTimeout`, the circuit breaker enters a
-    `HalfOpen` state, allowing one task to go through for testing the
-    connection
-3. `HalfOpen`: The circuit breaker has already allowed a task to go
-   through, as a reset attempt, in order to test the connection
-  - The first task when `Open` has expired is allowed through without
-    failing fast, just before the circuit breaker is evolved into the
-    `HalfOpen` state    
-  - All tasks attempted in `HalfOpen` fail-fast with an exception just
-    as in the `Open` state
-  - If that task attempt succeeds, the breaker is reset back to the
-    `Closed` state, with the `resetTimeout` and the `failures` count
-    also reset to initial values
-  - If the task attempt fails, the breaker is tripped again into the
-    `Open` state (the `resetTimeout` is multiplied by the exponential
-    backoff factor, up to the configured `maxResetTimeout`)
+1. `Closed`: 通常時またはサーキットブレーカーの開始時
+  - 例外は`failures`カウンタを増加させます。
+  - 成功すると`failures`カウンタはゼロにリセットされます。
+  - `failures`カウンタが`maxFailures`に到達すると、サーキットブレーカーは`Open`状態になります。
+2. `Open`: サーキットブレーカーがすべてのタスクを拒否する
+  - すべてのタスクは`ExecutionRejectedException`ですぐに失敗します。
+  - 設定された`resetTimeout`の後、サーキットブレーカーは`HalfOpen`状態になり、接続テストのための1つのタスクが実行されます。  
+3. `HalfOpen`: サーキットブレーカーは、接続をテストするためにリセットを試みて、タスクを通過させていきます。
+  - `Open`の期限が切れたときの最初のタスクは、高速で失敗することなく実行されます。 サーキットブレーカーが`HalfOpen`になる前の状態です。  
+  - `HalfOpen`状態で試行されたすべてのタスクは、`Open`状態と同様に例外を除いて高速に失敗します。
+  - そのタスクが成功すると、ブレーカーはリセットされ、`resetTimeout`と`failures`カウントも初期値にリセットされます。
+  - タスクの試行が失敗するとブレーカーは再び`Open`状態になります(設定された`maxResetTimeout`を上限に、`resetTimeout`に指数関数的なバックオフ係数が乗じられます)。  
 
 <img src="{{ site.baseurl }}public/images/circuit-breaker-states.png" align="center" style="max-width: 100%" />
-(image credits go to Akka's documentation)
+(画像の著作権はAkkaのドキュメントにあります)
 
-## Usage
+## 使い方
 
 ```scala mdoc:silent:nest
 import monix.catnap.CircuitBreaker
@@ -81,12 +57,10 @@ val circuitBreaker: Task[CircuitBreaker[Task]] =
   )
 ```
 
-Note the builder's returned reference is given in the `Task` context,
-because `CircuitBreaker` has shared state and doing otherwise
-would violate in some cases referential transparency.
+ビルダーの戻り値の参照は`Task`のコンテキストで与えられることに注意してください。
+というのも、`CircuitBreaker`は状態を共有しているので、場合によっては参照透過性に反することになるからです。
 
-You can workaround it by using the `unsafe` builder, but only do this
-if you know what you're doing, otherwise prefer the safe alternative:
+これを回避するには、`unsafe`ビルダーを使用します。そうでなければ安全な方法を選択してください:
 
 ```scala mdoc:silent:nest
 CircuitBreaker[Task].unsafe(
@@ -95,7 +69,7 @@ CircuitBreaker[Task].unsafe(
 )
 ```
 
-And in order to protect tasks being processed, one can use `protect`:
+また、処理中のタスクを保護するために`protect`を使用することができます:
 
 ```scala mdoc:silent:nest
 val problematic = Task {
@@ -110,9 +84,7 @@ for {
 } yield r
 ```
 
-When attempting to close the circuit breaker and resume normal
-operations, we can also apply an exponential backoff for repeated
-failed attempts, like so:
+サーキットブレーカーを閉じて通常のオペレーションを再開しようとするとき、繰り返す失敗に対して指数関数的なバックオフを適用することもできます:
 
 ```scala mdoc:silent:nest
 val circuitBreaker = CircuitBreaker[Task].of(
@@ -123,14 +95,11 @@ val circuitBreaker = CircuitBreaker[Task].of(
 )
 ```
 
-In this sample we attempt to reconnect after 10 seconds, then after
-20, 40 and so on, a delay that keeps increasing up to a configurable
-maximum of 10 minutes.
+このサンプルでは、10秒後、20秒、40秒......と`maxResetTimeout`である最大10分まで間隔を増加し続けます。
 
-### Event Handlers
+### イベントハンドラー
 
-In case you want to trigger events when the Circuit Breaker changes
-its state, like logging or metrics-related:
+ロギングやメトリクス関連のように、サーキットブレーカーの状態が変化したときにイベントを発生させたい場合:
 
 ```scala mdoc:silent:nest
 CircuitBreaker[Task].of(
@@ -138,24 +107,23 @@ CircuitBreaker[Task].of(
   resetTimeout = 10.seconds,
   
   onRejected = Task { 
-    println("Task rejected in Open or HalfOpen")
+    println("TaskはOpenまたはHalOpenのときに拒否される")
   },
   onClosed = Task {
-    println("Switched to Close, accepting tasks again")
+    println("Closeに切り替わり、タスクの受付を再開している")
   },
   onHalfOpen = Task {
-    println("Switched to HalfOpen, accepted one task for testing")
+    println("HalfOpenに切り替わり、テストのために1つのタスクだけ受け付ける")
   },
   onOpen = Task {
-    println("Switched to Open, all incoming tasks rejected for the next 10 seconds")
+    println("Openに切り替わると、その後10秒間すべてのタスクが拒否される、")
   }
 )
 ```
 
-### Retrying after Close
+### クローズ後の再試行
 
-In case a retry strategy needs to be implemented, the naive way of
-handling it would be to retry with a delay:
+リトライ戦略を実装する必要がある場合、素朴な方法として遅延を設けてリトライすることができます:
 
 ```scala mdoc:invisible:nest
 val circuitBreaker = 
@@ -169,7 +137,7 @@ val circuitBreaker =
 val task = circuitBreaker.protect(problematic)
 
 task.onErrorRestartLoop(100.millis) { (e, delay, retry) =>
-  // Exponential back-off, but with a limit
+  // 指数的バックオフ、ただし上限あり
   if (delay < 4.seconds)
     retry(delay * 2).delayExecution(delay)
   else
@@ -177,12 +145,11 @@ task.onErrorRestartLoop(100.millis) { (e, delay, retry) =>
 }
 ```
 
-But on the other hand you can wait for the precise moment the
-`CircuitBreaker` closes again:
+しかし、一方では`CircuitBreaker`が再び閉じる瞬間を待つことができます:
 
 ```scala mdoc:silent:nest
 task.onErrorRestartLoop(0) { (e, times, retry) =>
-  // Retrying for a maximum of 10 times
+  // 最大10回の再試行
   if (times < 10)
     circuitBreaker.awaitClose.flatMap(_ => retry(times + 1))
   else
@@ -193,11 +160,9 @@ task.onErrorRestartLoop(0) { (e, times, retry) =>
 ## Credits
 
 <div class='extra' markdown='1'>
-This data type was inspired by the availability of
-[Akka's Circuit Breaker](http://doc.akka.io/docs/akka/current/common/circuitbreaker.html).
-The implementation and the API are not the same, but the
-purpose and the state machine it uses is similar.
+このデータタイプは、[Akkaのサーキットブレーカー](http://doc.akka.io/docs/akka/current/common/circuitbreaker.html)からヒントを得ています。
+実装やAPIは同じではありませんが 目的や使用しているステートマシンは似ています。
 
-This documentation also has copy/pasted fragments from Akka.
-Credit should be given where credit is due 😉
+このドキュメントには、Akkaからのコピーペーストされたフラグメントも含まれています。
+クレジットが必要な場合はクレジットを表示してください 😉
 </div>
