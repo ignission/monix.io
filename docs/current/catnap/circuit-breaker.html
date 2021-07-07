@@ -10,7 +10,7 @@
 
   
   
-  <title>Circuit Breaker &mdash; Monix</title>
+  <title>サーキットブレーカー &mdash; Monix</title>
 
   <link rel="canonical" href="https://monix.io/docs/current/catnap/circuit-breaker.html" />
 
@@ -20,25 +20,25 @@
   <meta name="twitter:image:src" content="https://monix.io/public/images/monix-logo-rect.png">
   <meta name="twitter:site" content="@monix" />  
   <meta name="twitter:creator" content="@monix" />  
-  <meta name="twitter:title" content="Circuit Breaker &amp;mdash; Monix" />
-  <meta name="twitter:description" content="A data type for providing stability and prevent cascading failures in distributed systems." />
+  <meta name="twitter:title" content="サーキットブレーカー &amp;mdash; Monix" />
+  <meta name="twitter:description" content="分散システムの安定性を確保し、連鎖的な障害を防ぐためのデータタイプ。" />
   <meta name="twitter:url" content="https://monix.io/docs/current/catnap/circuit-breaker.html">
   <!-- Facebook Open-Graph -->
   <meta property="fb:app_id" content="2160100887367418" />
 
   <meta content="Monix" property="og:site_name">
-  <meta content="Circuit Breaker &amp;mdash; Monix" property="og:title">
-  <meta content="A data type for providing stability and prevent cascading failures in distributed systems." property="og:description">
+  <meta content="サーキットブレーカー &amp;mdash; Monix" property="og:title">
+  <meta content="分散システムの安定性を確保し、連鎖的な障害を防ぐためのデータタイプ。" property="og:description">
   <meta content="https://monix.io/docs/current/catnap/circuit-breaker.html" property="og:url">
-  <meta content="2020-07-20T09:04:26+00:00" property="article:modified_time">
+  <meta content="2021-07-07T13:21:50+00:00" property="article:modified_time">
     
   <meta content="article" property="og:type">
   <meta property="og:image" content="https://monix.io/public/images/monix-logo.png" />
   <meta property="og:image:secure_url" content="https://monix.io/public/images/monix-logo.png" />
   <!-- CSS -->
-  <link rel="stylesheet" href="/public/css/all.css?1625531755785814998">
+  <link rel="stylesheet" href="/public/css/all.css?1625664311258440621">
   <!--[if lt IE 9]>
-  <link rel="stylesheet" href="/public/css/forkme.ie.css?1625531755785814998">
+  <link rel="stylesheet" href="/public/css/forkme.ie.css?1625664311258440621">
   <![endif]-->
 
   <link rel="stylesheet" href="//fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
@@ -102,15 +102,15 @@
       <h1 class="page-title">
         
         
-          Circuit Breaker
+          サーキットブレーカー
         
         
       </h1>
 
   
   <time class="post-date" itemprop="dateModified"
-    datetime="2020-07-20">
-    <b>ページの更新日:</b> 20 Jul 2020
+    datetime="2021-07-07">
+    <b>ページの更新日:</b> 07 Jul 2021
   </time>
   <nav role="navigation" id="type-info">
     <a href="/api/current/monix/catnap/CircuitBreaker.html">APIドキュメント</a>
@@ -129,12 +129,12 @@
 
   <nav role="navigation" id="toc">
     <ul>
-  <li><a href="#purpose">Purpose</a></li>
-  <li><a href="#how-it-works">How it Works</a></li>
-  <li><a href="#usage">Usage</a>
+  <li><a href="#目的">目的</a></li>
+  <li><a href="#仕組み">仕組み</a></li>
+  <li><a href="#使い方">使い方</a>
     <ul>
-      <li><a href="#event-handlers">Event Handlers</a></li>
-      <li><a href="#retrying-after-close">Retrying after Close</a></li>
+      <li><a href="#イベントハンドラー">イベントハンドラー</a></li>
+      <li><a href="#クローズ後の再試行">クローズ後の再試行</a></li>
     </ul>
   </li>
   <li><a href="#credits">Credits</a></li>
@@ -142,93 +142,69 @@
 
   </nav>
 
-  <p>The <code class="language-plaintext highlighter-rouge">CircuitBreaker</code> is used to provide stability and prevent
-cascading failures in distributed systems.</p>
+  <p><code class="language-plaintext highlighter-rouge">CircuitBreaker</code>は分散システムの安定性を高め、連鎖的な障害を防ぐために使用されます。</p>
     
-      <h2 id="purpose">
+      <h2 id="目的">
         
         
-          Purpose <a href="#purpose" class="anchor">#</a>
+          目的 <a href="#目的" class="anchor">#</a>
         
         
       </h2>
 
-<p>As an example, we have a web application interacting with a remote
-third party web service. Let’s say the third party has oversold their
-capacity and their database melts down under load. Assume that the
-database fails in such a way that it takes a very long time to hand
-back an error to the third party web service. This in turn makes calls
-fail after a long period of time. Back to our web application, the
-users have noticed that their form submissions take much longer
-seeming to hang. Well the users do what they know to do which is use
-the refresh button, adding more requests to their already running
-requests. This eventually causes the failure of the web application
-due to resource exhaustion. This will affect all users, even those who
-are not using functionality dependent on this third party web service.</p>
+<p>例として、外部サービスと通信するウェブアプリケーションがあるとします。
+外部サービスはキャパシティをオーバーして、データベースが負荷に耐えられなくなったケースを考えます。
+そうすると外部サービスからエラーが返ってくるのに長い時間がかかったりしますよね。
+ユーザーはフォームの送信に非常に時間がかかるため、ウェブアプリケーションがハングしていると感じるでしょう。
+ユーザーは不安に思ったので、既に実行されているリクエストにさらにリクエストを追加します。
+その結果、リソースの枯渇によるウェブアプリケーションの障害が発生します。
+これは、通信先の問題と関係なくすべてのユーザーに影響してしまいます。</p>
 
-<p>Introducing circuit breakers on the web service call would cause the
-requests to begin to fail-fast, letting the user know that something
-is wrong and that they need not refresh their request. This also
-confines the failure behavior to only those users that are using
-functionality dependent on the third party, other users are no longer
-affected as there is no resource exhaustion. Circuit breakers can also
-allow savvy developers to mark portions of the site that use the
-functionality unavailable, or perhaps show some cached content as
-appropriate while the breaker is open.</p>
+<p>外部サービスの呼び出しにサーキットブレーカーを導入すると、リクエストが早く失敗し始め何かが間違っていてリクエストを更新する必要がないことをユーザーに知らせます。
+これはまた、障害の発生は外部サービスに依存した機能を使用しているユーザーだけに限定され、他のユーザーはもはや影響を受けません。
+サーキットブレーカーは外部サービスに依存している機能の一部を利用できないようにしたり、遮断中にキャッシュされたコンテンツを表示したりすることができます。</p>
     
-      <h2 id="how-it-works">
+      <h2 id="仕組み">
         
         
-          How it Works <a href="#how-it-works" class="anchor">#</a>
+          仕組み <a href="#仕組み" class="anchor">#</a>
         
         
       </h2>
 
-<p>The circuit breaker models a concurrent state machine that can be in
-any of these 3 states:</p>
+<p>サーキットブレーカーは、以下の3つのいずれかの状態になることができる並行ステートマシンをモデル化しています:</p>
 
 <ol>
-  <li><code class="language-plaintext highlighter-rouge">Closed</code>: During normal operations or when the <code class="language-plaintext highlighter-rouge">CircuitBreaker</code> starts
+  <li><code class="language-plaintext highlighter-rouge">Closed</code>: 通常時またはサーキットブレーカーの開始時
     <ul>
-      <li>Exceptions increment the <code class="language-plaintext highlighter-rouge">failures</code> counter</li>
-      <li>Successes reset the <code class="language-plaintext highlighter-rouge">failures</code> counter to zero</li>
-      <li>When the <code class="language-plaintext highlighter-rouge">failures</code> counter reaches the <code class="language-plaintext highlighter-rouge">maxFailures</code> threshold,
- the breaker is tripped into the <code class="language-plaintext highlighter-rouge">Open</code> state</li>
+      <li>例外は<code class="language-plaintext highlighter-rouge">failures</code>カウンタを増加させます。</li>
+      <li>成功すると<code class="language-plaintext highlighter-rouge">failures</code>カウンタはゼロにリセットされます。</li>
+      <li><code class="language-plaintext highlighter-rouge">failures</code>カウンタが<code class="language-plaintext highlighter-rouge">maxFailures</code>に到達すると、サーキットブレーカーは<code class="language-plaintext highlighter-rouge">Open</code>状態になります。</li>
     </ul>
   </li>
-  <li><code class="language-plaintext highlighter-rouge">Open</code>: The circuit breaker rejects all tasks
+  <li><code class="language-plaintext highlighter-rouge">Open</code>: サーキットブレーカーがすべてのタスクを拒否する
     <ul>
-      <li>all tasks fail fast with <code class="language-plaintext highlighter-rouge">ExecutionRejectedException</code></li>
-      <li>after the configured <code class="language-plaintext highlighter-rouge">resetTimeout</code>, the circuit breaker enters a
- <code class="language-plaintext highlighter-rouge">HalfOpen</code> state, allowing one task to go through for testing the
- connection</li>
+      <li>すべてのタスクは<code class="language-plaintext highlighter-rouge">ExecutionRejectedException</code>ですぐに失敗します。</li>
+      <li>設定された<code class="language-plaintext highlighter-rouge">resetTimeout</code>の後、サーキットブレーカーは<code class="language-plaintext highlighter-rouge">HalfOpen</code>状態になり、接続テストのための1つのタスクが実行されます。</li>
     </ul>
   </li>
-  <li><code class="language-plaintext highlighter-rouge">HalfOpen</code>: The circuit breaker has already allowed a task to go
-through, as a reset attempt, in order to test the connection
+  <li><code class="language-plaintext highlighter-rouge">HalfOpen</code>: サーキットブレーカーは、接続をテストするためにリセットを試みて、タスクを通過させていきます。
     <ul>
-      <li>The first task when <code class="language-plaintext highlighter-rouge">Open</code> has expired is allowed through without
- failing fast, just before the circuit breaker is evolved into the
- <code class="language-plaintext highlighter-rouge">HalfOpen</code> state</li>
-      <li>All tasks attempted in <code class="language-plaintext highlighter-rouge">HalfOpen</code> fail-fast with an exception just
- as in the <code class="language-plaintext highlighter-rouge">Open</code> state</li>
-      <li>If that task attempt succeeds, the breaker is reset back to the
- <code class="language-plaintext highlighter-rouge">Closed</code> state, with the <code class="language-plaintext highlighter-rouge">resetTimeout</code> and the <code class="language-plaintext highlighter-rouge">failures</code> count
- also reset to initial values</li>
-      <li>If the task attempt fails, the breaker is tripped again into the
- <code class="language-plaintext highlighter-rouge">Open</code> state (the <code class="language-plaintext highlighter-rouge">resetTimeout</code> is multiplied by the exponential
- backoff factor, up to the configured <code class="language-plaintext highlighter-rouge">maxResetTimeout</code>)</li>
+      <li><code class="language-plaintext highlighter-rouge">Open</code>の期限が切れたときの最初のタスクは、高速で失敗することなく実行されます。 サーキットブレーカーが<code class="language-plaintext highlighter-rouge">HalfOpen</code>になる前の状態です。</li>
+      <li><code class="language-plaintext highlighter-rouge">HalfOpen</code>状態で試行されたすべてのタスクは、<code class="language-plaintext highlighter-rouge">Open</code>状態と同様に例外を除いて高速に失敗します。</li>
+      <li>そのタスクが成功すると、ブレーカーはリセットされ、<code class="language-plaintext highlighter-rouge">resetTimeout</code>と<code class="language-plaintext highlighter-rouge">failures</code>カウントも初期値にリセットされます。</li>
+      <li>タスクの試行が失敗するとブレーカーは再び<code class="language-plaintext highlighter-rouge">Open</code>状態になります(設定された<code class="language-plaintext highlighter-rouge">maxResetTimeout</code>を上限に、<code class="language-plaintext highlighter-rouge">resetTimeout</code>に指数関数的なバックオフ係数が乗じられます)。</li>
     </ul>
   </li>
 </ol>
 
 <p><img src="/public/images/circuit-breaker-states.png" align="center" style="max-width: 100%" />
-(image credits go to Akka’s documentation)</p>
+(画像の著作権はAkkaのドキュメントにあります)</p>
     
-      <h2 id="usage">
+      <h2 id="使い方">
         
         
-          Usage <a href="#usage" class="anchor">#</a>
+          使い方 <a href="#使い方" class="anchor">#</a>
         
         
       </h2>
@@ -244,12 +220,10 @@ through, as a reset attempt, in order to test the connection
   <span class="o">)</span>
 </code></pre></div></div>
 
-<p>Note the builder’s returned reference is given in the <code class="language-plaintext highlighter-rouge">Task</code> context,
-because <code class="language-plaintext highlighter-rouge">CircuitBreaker</code> has shared state and doing otherwise
-would violate in some cases referential transparency.</p>
+<p>ビルダーの戻り値の参照は<code class="language-plaintext highlighter-rouge">Task</code>のコンテキストで与えられることに注意してください。
+というのも、<code class="language-plaintext highlighter-rouge">CircuitBreaker</code>は状態を共有しているので、場合によっては参照透過性に反することになるからです。</p>
 
-<p>You can workaround it by using the <code class="language-plaintext highlighter-rouge">unsafe</code> builder, but only do this
-if you know what you’re doing, otherwise prefer the safe alternative:</p>
+<p>これを回避するには、<code class="language-plaintext highlighter-rouge">unsafe</code>ビルダーを使用します。そうでなければ安全な方法を選択してください:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">CircuitBreaker</span><span class="o">[</span><span class="kt">Task</span><span class="o">].</span><span class="py">unsafe</span><span class="o">(</span>
   <span class="n">maxFailures</span> <span class="k">=</span> <span class="mi">5</span><span class="o">,</span>
@@ -257,7 +231,7 @@ if you know what you’re doing, otherwise prefer the safe alternative:</p>
 <span class="o">)</span>
 </code></pre></div></div>
 
-<p>And in order to protect tasks being processed, one can use <code class="language-plaintext highlighter-rouge">protect</code>:</p>
+<p>また、処理中のタスクを保護するために<code class="language-plaintext highlighter-rouge">protect</code>を使用することができます:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">problematic</span> <span class="k">=</span> <span class="nc">Task</span> <span class="o">{</span>
   <span class="k">val</span> <span class="nv">nr</span> <span class="k">=</span> <span class="nv">util</span><span class="o">.</span><span class="py">Random</span><span class="o">.</span><span class="py">nextInt</span><span class="o">()</span>
@@ -271,9 +245,7 @@ if you know what you’re doing, otherwise prefer the safe alternative:</p>
 <span class="o">}</span> <span class="k">yield</span> <span class="n">r</span>
 </code></pre></div></div>
 
-<p>When attempting to close the circuit breaker and resume normal
-operations, we can also apply an exponential backoff for repeated
-failed attempts, like so:</p>
+<p>サーキットブレーカーを閉じて通常のオペレーションを再開しようとするとき、繰り返す失敗に対して指数関数的なバックオフを適用することもできます:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">circuitBreaker</span> <span class="k">=</span> <span class="nc">CircuitBreaker</span><span class="o">[</span><span class="kt">Task</span><span class="o">].</span><span class="py">of</span><span class="o">(</span>
   <span class="n">maxFailures</span> <span class="k">=</span> <span class="mi">5</span><span class="o">,</span>
@@ -283,55 +255,51 @@ failed attempts, like so:</p>
 <span class="o">)</span>
 </code></pre></div></div>
 
-<p>In this sample we attempt to reconnect after 10 seconds, then after
-20, 40 and so on, a delay that keeps increasing up to a configurable
-maximum of 10 minutes.</p>
+<p>このサンプルでは、10秒後、20秒、40秒……と<code class="language-plaintext highlighter-rouge">maxResetTimeout</code>である最大10分まで間隔を増加し続けます。</p>
     
-      <h3 id="event-handlers">
+      <h3 id="イベントハンドラー">
         
         
-          Event Handlers <a href="#event-handlers" class="anchor">#</a>
+          イベントハンドラー <a href="#イベントハンドラー" class="anchor">#</a>
         
         
       </h3>
 
-<p>In case you want to trigger events when the Circuit Breaker changes
-its state, like logging or metrics-related:</p>
+<p>ロギングやメトリクス関連のように、サーキットブレーカーの状態が変化したときにイベントを発生させたい場合:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">CircuitBreaker</span><span class="o">[</span><span class="kt">Task</span><span class="o">].</span><span class="py">of</span><span class="o">(</span>
   <span class="n">maxFailures</span> <span class="k">=</span> <span class="mi">5</span><span class="o">,</span>
   <span class="n">resetTimeout</span> <span class="k">=</span> <span class="mf">10.</span><span class="n">seconds</span><span class="o">,</span>
   
   <span class="n">onRejected</span> <span class="k">=</span> <span class="nc">Task</span> <span class="o">{</span> 
-    <span class="nf">println</span><span class="o">(</span><span class="s">"Task rejected in Open or HalfOpen"</span><span class="o">)</span>
+    <span class="nf">println</span><span class="o">(</span><span class="s">"TaskはOpenまたはHalOpenのときに拒否される"</span><span class="o">)</span>
   <span class="o">},</span>
   <span class="n">onClosed</span> <span class="k">=</span> <span class="nc">Task</span> <span class="o">{</span>
-    <span class="nf">println</span><span class="o">(</span><span class="s">"Switched to Close, accepting tasks again"</span><span class="o">)</span>
+    <span class="nf">println</span><span class="o">(</span><span class="s">"Closeに切り替わり、タスクの受付を再開している"</span><span class="o">)</span>
   <span class="o">},</span>
   <span class="n">onHalfOpen</span> <span class="k">=</span> <span class="nc">Task</span> <span class="o">{</span>
-    <span class="nf">println</span><span class="o">(</span><span class="s">"Switched to HalfOpen, accepted one task for testing"</span><span class="o">)</span>
+    <span class="nf">println</span><span class="o">(</span><span class="s">"HalfOpenに切り替わり、テストのために1つのタスクだけ受け付ける"</span><span class="o">)</span>
   <span class="o">},</span>
   <span class="n">onOpen</span> <span class="k">=</span> <span class="nc">Task</span> <span class="o">{</span>
-    <span class="nf">println</span><span class="o">(</span><span class="s">"Switched to Open, all incoming tasks rejected for the next 10 seconds"</span><span class="o">)</span>
+    <span class="nf">println</span><span class="o">(</span><span class="s">"Openに切り替わると、その後10秒間すべてのタスクが拒否される、"</span><span class="o">)</span>
   <span class="o">}</span>
 <span class="o">)</span>
 </code></pre></div></div>
     
-      <h3 id="retrying-after-close">
+      <h3 id="クローズ後の再試行">
         
         
-          Retrying after Close <a href="#retrying-after-close" class="anchor">#</a>
+          クローズ後の再試行 <a href="#クローズ後の再試行" class="anchor">#</a>
         
         
       </h3>
 
-<p>In case a retry strategy needs to be implemented, the naive way of
-handling it would be to retry with a delay:</p>
+<p>リトライ戦略を実装する必要がある場合、素朴な方法として遅延を設けてリトライすることができます:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">task</span> <span class="k">=</span> <span class="nv">circuitBreaker</span><span class="o">.</span><span class="py">protect</span><span class="o">(</span><span class="n">problematic</span><span class="o">)</span>
 
 <span class="nv">task</span><span class="o">.</span><span class="py">onErrorRestartLoop</span><span class="o">(</span><span class="mf">100.</span><span class="n">millis</span><span class="o">)</span> <span class="o">{</span> <span class="o">(</span><span class="n">e</span><span class="o">,</span> <span class="n">delay</span><span class="o">,</span> <span class="n">retry</span><span class="o">)</span> <span class="k">=&gt;</span>
-  <span class="c1">// Exponential back-off, but with a limit</span>
+  <span class="c1">// 指数的バックオフ、ただし上限あり</span>
   <span class="nf">if</span> <span class="o">(</span><span class="n">delay</span> <span class="o">&lt;</span> <span class="mf">4.</span><span class="n">seconds</span><span class="o">)</span>
     <span class="nf">retry</span><span class="o">(</span><span class="n">delay</span> <span class="o">*</span> <span class="mi">2</span><span class="o">).</span><span class="py">delayExecution</span><span class="o">(</span><span class="n">delay</span><span class="o">)</span>
   <span class="k">else</span>
@@ -339,11 +307,10 @@ handling it would be to retry with a delay:</p>
 <span class="o">}</span>
 </code></pre></div></div>
 
-<p>But on the other hand you can wait for the precise moment the
-<code class="language-plaintext highlighter-rouge">CircuitBreaker</code> closes again:</p>
+<p>しかし、一方では<code class="language-plaintext highlighter-rouge">CircuitBreaker</code>が再び閉じる瞬間を待つことができます:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">task</span><span class="o">.</span><span class="py">onErrorRestartLoop</span><span class="o">(</span><span class="mi">0</span><span class="o">)</span> <span class="o">{</span> <span class="o">(</span><span class="n">e</span><span class="o">,</span> <span class="n">times</span><span class="o">,</span> <span class="n">retry</span><span class="o">)</span> <span class="k">=&gt;</span>
-  <span class="c1">// Retrying for a maximum of 10 times</span>
+  <span class="c1">// 最大10回の再試行</span>
   <span class="nf">if</span> <span class="o">(</span><span class="n">times</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="o">)</span>
     <span class="nv">circuitBreaker</span><span class="o">.</span><span class="py">awaitClose</span><span class="o">.</span><span class="py">flatMap</span><span class="o">(</span><span class="k">_</span> <span class="k">=&gt;</span> <span class="nf">retry</span><span class="o">(</span><span class="n">times</span> <span class="o">+</span> <span class="mi">1</span><span class="o">))</span>
   <span class="k">else</span>
@@ -360,13 +327,11 @@ handling it would be to retry with a delay:</p>
       </h2>
 
 <div class="extra">
-  <p>This data type was inspired by the availability of
-<a href="http://doc.akka.io/docs/akka/current/common/circuitbreaker.html">Akka’s Circuit Breaker</a>.
-The implementation and the API are not the same, but the
-purpose and the state machine it uses is similar.</p>
+  <p>このデータタイプは、<a href="http://doc.akka.io/docs/akka/current/common/circuitbreaker.html">Akkaのサーキットブレーカー</a>からヒントを得ています。
+実装やAPIは同じではありませんが 目的や使用しているステートマシンは似ています。</p>
 
-  <p>This documentation also has copy/pasted fragments from Akka.
-Credit should be given where credit is due 😉</p>
+  <p>このドキュメントには、Akkaからのコピーペーストされたフラグメントも含まれています。
+クレジットが必要な場合はクレジットを表示してください 😉</p>
 </div>
 
 
@@ -400,7 +365,7 @@ Credit should be given where credit is due 😉</p>
 </script>
 <noscript>
   
-  <img src="https://ly.monix.io/m.php?idsite=2&rec=1&action_name=Circuit+Breaker" style="border:0" alt="" />
+  <img src="https://ly.monix.io/m.php?idsite=2&rec=1&action_name=%E3%82%B5%E3%83%BC%E3%82%AD%E3%83%83%E3%83%88%E3%83%96%E3%83%AC%E3%83%BC%E3%82%AB%E3%83%BC" style="border:0" alt="" />
 </noscript>
 
 
