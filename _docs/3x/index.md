@@ -50,7 +50,7 @@ sbt new monix/monix-jvm-app-template.g8
      class="doc-icon" />
 
 - [APIドキュメント]({{ page.path | api_base_url }}monix/catnap/index.html)
-- [Circuit Breaker](./catnap/circuit-breaker.md)
+- [サーキットブレーカー](./catnap/circuit-breaker.md)
 - [MVar](./catnap/mvar.md)
 
 ### monix-eval
