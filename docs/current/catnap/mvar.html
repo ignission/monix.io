@@ -21,24 +21,24 @@
   <meta name="twitter:site" content="@monix" />  
   <meta name="twitter:creator" content="@monix" />  
   <meta name="twitter:title" content="MVar &amp;mdash; Monix" />
-  <meta name="twitter:description" content="A mutable location that can be empty or contains a value, asynchronously blocking reads when empty and blocking writes when full." />
+  <meta name="twitter:description" content="空または値を含めることができる可変の変数で、空のときは非同期に読み込みをブロックし、満杯のときは書き込みをブロックします。" />
   <meta name="twitter:url" content="https://monix.io/docs/current/catnap/mvar.html">
   <!-- Facebook Open-Graph -->
   <meta property="fb:app_id" content="2160100887367418" />
 
   <meta content="Monix" property="og:site_name">
   <meta content="MVar &amp;mdash; Monix" property="og:title">
-  <meta content="A mutable location that can be empty or contains a value, asynchronously blocking reads when empty and blocking writes when full." property="og:description">
+  <meta content="空または値を含めることができる可変の変数で、空のときは非同期に読み込みをブロックし、満杯のときは書き込みをブロックします。" property="og:description">
   <meta content="https://monix.io/docs/current/catnap/mvar.html" property="og:url">
-  <meta content="2020-07-20T15:51:27+00:00" property="article:modified_time">
+  <meta content="2021-07-08T14:19:40+00:00" property="article:modified_time">
     
   <meta content="article" property="og:type">
   <meta property="og:image" content="https://monix.io/public/images/monix-logo.png" />
   <meta property="og:image:secure_url" content="https://monix.io/public/images/monix-logo.png" />
   <!-- CSS -->
-  <link rel="stylesheet" href="/public/css/all.css?1625665869539466926">
+  <link rel="stylesheet" href="/public/css/all.css?1625754182468065957">
   <!--[if lt IE 9]>
-  <link rel="stylesheet" href="/public/css/forkme.ie.css?1625665869539466926">
+  <link rel="stylesheet" href="/public/css/forkme.ie.css?1625754182468065957">
   <![endif]-->
 
   <link rel="stylesheet" href="//fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
@@ -109,8 +109,8 @@
 
   
   <time class="post-date" itemprop="dateModified"
-    datetime="2020-07-20">
-    <b>ページの更新日:</b> 20 Jul 2020
+    datetime="2021-07-08">
+    <b>ページの更新日:</b> 08 Jul 2021
   </time>
   <nav role="navigation" id="type-info">
     <a href="/api/current/monix/catnap/MVar.html">APIドキュメント</a>
@@ -129,74 +129,69 @@
 
   <nav role="navigation" id="toc">
     <ul>
-  <li><a href="#introduction">Introduction</a>
+  <li><a href="#概要">概要</a>
     <ul>
-      <li><a href="#inspiration">Inspiration</a></li>
+      <li><a href="#インスピレーション">インスピレーション</a></li>
     </ul>
   </li>
   <li><a href="#cats-effect">Cats-Effect</a></li>
-  <li><a href="#use-case-synchronized-mutable-variables">Use-case: Synchronized Mutable Variables</a></li>
-  <li><a href="#use-case-asynchronous-lock-binary-semaphore-mutex">Use-case: Asynchronous Lock (Binary Semaphore, Mutex)</a></li>
-  <li><a href="#use-case-producerconsumer-channel">Use-case: Producer/Consumer Channel</a></li>
+  <li><a href="#ユースケース-同期した可変型変数">ユースケース: 同期した可変型変数</a></li>
+  <li><a href="#ユースケース-非同期ロックバイナリセマフォミューテックス">ユースケース: 非同期ロック(バイナリセマフォ、ミューテックス)</a></li>
+  <li><a href="#ユースケース-プロデューサーコンシューマーチャンネル">ユースケース: プロデューサー/コンシューマーチャンネル</a></li>
 </ul>
 
   </nav>
 
-  <p>An <code class="language-plaintext highlighter-rouge">MVar</code> is a mutable location that can be empty or contains a value,
-asynchronously blocking reads when empty and blocking writes when full.</p>
+  <p><code class="language-plaintext highlighter-rouge">MVar</code>は、空または値を含めることができる可変の変数で、空のときは非同期に読み込みをブロックし、満杯のときは書き込みをブロックします。</p>
     
-      <h2 id="introduction">
+      <h2 id="概要">
         
         
-          Introduction <a href="#introduction" class="anchor">#</a>
+          概要 <a href="#概要" class="anchor">#</a>
         
         
       </h2>
 
-<p>Use-cases:</p>
+<p>ユースケース:</p>
 
 <ol>
-  <li>As synchronized, thread-safe mutable variables</li>
-  <li>As channels, with <code class="language-plaintext highlighter-rouge">take</code> and <code class="language-plaintext highlighter-rouge">put</code> acting as “receive” and “send”</li>
-  <li>As a binary semaphore, with <code class="language-plaintext highlighter-rouge">take</code> and <code class="language-plaintext highlighter-rouge">put</code> acting as “acquire” and “release”</li>
+  <li>同期され、スレッドセーフな可変型変数として</li>
+  <li><code class="language-plaintext highlighter-rouge">take</code>と<code class="language-plaintext highlighter-rouge">put</code>が「受信」と「送信」の役割を持つチャンネルとして</li>
+  <li><code class="language-plaintext highlighter-rouge">take</code>と<code class="language-plaintext highlighter-rouge">put</code>が「取得」と「解放」の役割を持つバイナリーセマフォとして</li>
 </ol>
 
-<p>It has these fundamental, atomic operations:</p>
+<p>これらの基本的でアトミックな操作を持っています:</p>
 
 <ul>
-  <li><code class="language-plaintext highlighter-rouge">put</code> which fills the var if empty, or blocks (asynchronously) until the var is empty again</li>
-  <li><code class="language-plaintext highlighter-rouge">tryPut</code> which fills the var if empty; returns <code class="language-plaintext highlighter-rouge">true</code> if successful</li>
-  <li><code class="language-plaintext highlighter-rouge">take</code> which empties the var if full, returning the contained value, or blocks (asynchronously) otherwise until there is a value to pull</li>
-  <li><code class="language-plaintext highlighter-rouge">tryTake</code> empties if full, returns <code class="language-plaintext highlighter-rouge">None</code> if empty.</li>
-  <li><code class="language-plaintext highlighter-rouge">read</code> which reads the current value without touching it, assuming there is one, or otherwise it waits until a value is made available via put</li>
-  <li><code class="language-plaintext highlighter-rouge">tryRead</code> returns <code class="language-plaintext highlighter-rouge">Some(a)</code> if full, without modifying the var, or else returns <code class="language-plaintext highlighter-rouge">None</code></li>
-  <li><code class="language-plaintext highlighter-rouge">isEmpty</code> returns <code class="language-plaintext highlighter-rouge">true</code> if currently empty</li>
+  <li><code class="language-plaintext highlighter-rouge">put</code>は空の場合に変数へ値を入れるか、変数が再び空になるまで(非同期に)ブロックする。</li>
+  <li><code class="language-plaintext highlighter-rouge">tryPut</code>は空の場合に変数へ値を入れようとし、成功した場合は<code class="language-plaintext highlighter-rouge">true</code>を返す。</li>
+  <li><code class="language-plaintext highlighter-rouge">take</code>は満杯になったときにvarを空にして含まれている値を返し、そうでなければ取り出す値があるまで(非同期に)ブロックする。</li>
+  <li><code class="language-plaintext highlighter-rouge">tryTake</code>は満杯になったら空にし、<code class="language-plaintext highlighter-rouge">None</code>を返す。</li>
+  <li><code class="language-plaintext highlighter-rouge">read</code>は現在の値があると仮定して触れずに読み取るか、そうでなければ<code class="language-plaintext highlighter-rouge">put</code>で値が利用可能になるまで待つ。</li>
+  <li><code class="language-plaintext highlighter-rouge">tryRead</code>は満杯であれば<code class="language-plaintext highlighter-rouge">Some(a)</code>を変更せずに返し、そうでなければ <code class="language-plaintext highlighter-rouge">None</code> を返す。</li>
+  <li><code class="language-plaintext highlighter-rouge">isEmpty</code>は現在空であれば<code class="language-plaintext highlighter-rouge">true</code>を返す。</li>
 </ul>
 
 <p class="extra">
-In this context “<i>asynchronous blocking</i>” means that we are not blocking
-any threads. Instead the implementation uses callbacks to notify clients
-when the operation has finished (notifications exposed by means of <a href="./task.md">Task</a>)
-and it thus works on top of Javascript as well.
+この文脈では、”<i>非同期ブロッキング</i>“とはスレッドをブロックしないことを意味します。
+その代わりに実装では、操作が終了したことをクライアントに通知するためにコールバックを使用しています(通知方法は<a href="./task.md">Task</a>によって公開されています)。
+そのため、Javascriptの上でも動作します。
 </p>
     
-      <h3 id="inspiration">
+      <h3 id="インスピレーション">
         
         
-          Inspiration <a href="#inspiration" class="anchor">#</a>
+          インスピレーション <a href="#インスピレーション" class="anchor">#</a>
         
         
       </h3>
 
-<p>This data type is inspired by <code class="language-plaintext highlighter-rouge">Control.Concurrent.MVar</code> from Haskell, introduced in the paper
-<a href="http://research.microsoft.com/~simonpj/papers/concurrent-haskell.ps.gz">Concurrent Haskell</a>,
-by Simon Peyton Jones, Andrew Gordon and Sigbjorn Finne, though some details of
-their implementation are changed (in particular, a put on a full <code class="language-plaintext highlighter-rouge">MVar</code> used
-to error, but now merely blocks).</p>
+<p>このデータタイプは、論文<a href="http://research.microsoft.com/~simonpj/papers/concurrent-haskell.ps.gz">Concurrent Haskell</a>で紹介されています。
+Simon Peyton Jones、Andrew Gordon、Sigbjorn Finneによって実装の詳細は変更されています(特に完全な<code class="language-plaintext highlighter-rouge">MVar</code>への<code class="language-plaintext highlighter-rouge">put</code>は以前はエラーになっていましたが、現在は単にブロックするだけです)。</p>
 
-<p>Appropriate for building synchronization primitives and  performing simple
-interthread communication, it’s the equivalent of a <code class="language-plaintext highlighter-rouge">BlockingQueue(capacity = 1)</code>,
-except that there’s no actual thread blocking involved and it is powered by <code class="language-plaintext highlighter-rouge">Task</code>.</p>
+<p>同期プリミティブの構築や単純なスレッド間通信の実行に適しています。
+これは<code class="language-plaintext highlighter-rouge">BlockingQueue(capacity = 1)</code>と同等のものです。
+ただし、実際にはスレッドのブロッキングは行われず、<code class="language-plaintext highlighter-rouge">Task</code>を利用することになります。</p>
     
       <h2 id="cats-effect">
         
@@ -206,35 +201,27 @@ except that there’s no actual thread blocking involved and it is powered by <c
         
       </h2>
 
-<p><code class="language-plaintext highlighter-rouge">MVar</code> is generic, being built to abstract over the effect type via the
-<a href="https://typelevel.org/cats-effect/">Cats-Effect</a> type classes, meaning
-you can use it with Monix’s <code class="language-plaintext highlighter-rouge">Task</code> just as well as with 
-<a href="https://typelevel.org/cats-effect/datatypes/io.html">cats.effect.IO</a>
-or any data types implementing <code class="language-plaintext highlighter-rouge">Async</code> or <code class="language-plaintext highlighter-rouge">Concurrent</code>.</p>
+<p><code class="language-plaintext highlighter-rouge">MVar</code>は汎用的で、<a href="https://typelevel.org/cats-effect/">Cats-Effect</a>の型クラスを介してエフェクトタイプを抽象化するように作られています。
+つまり、Monixの<code class="language-plaintext highlighter-rouge">Task</code>と同じように<code class="language-plaintext highlighter-rouge">MVar</code>を<a href="https://typelevel.org/cats-effect/datatypes/io.html">cats.effect.IO</a>や、<code class="language-plaintext highlighter-rouge">Async</code>、<code class="language-plaintext highlighter-rouge">Concurrent</code>を実装したデータタイプと同様に使用できるということです。</p>
 
-<p>Note that <code class="language-plaintext highlighter-rouge">MVar</code> is already described in
-<a href="https://typelevel.org/cats-effect/concurrency/mvar.md">cats.effect.concurrent.MVar</a>
-and Monix’s implementation does in fact implement that interface.</p>
+<p>なお、<code class="language-plaintext highlighter-rouge">MVar</code>については<a href="https://typelevel.org/cats-effect/concurrency/mvar.md">cats.effect.concurrent.MVar</a>ですでに説明されており、Monixは実際にそのインターフェイスを実装しています。</p>
 
 <p><a href="https://typelevel.org/cats-effect/concurrency/mvar.md" target="_blank" title="cats.effect.concurrent.MVar" alt="cats.effect.concurrent.MVar">
   <img src="https://monix.io/public/images/concurrency-mvar.png" width="400" />
 </a></p>
 
-<p><code class="language-plaintext highlighter-rouge">MVar</code> will remain in Monix as well because:</p>
+<p>次の理由から、<code class="language-plaintext highlighter-rouge">MVar</code>はMonixにも残ります:</p>
 
 <ol>
-  <li>it shares implementation with
-<a href="/api/current/monix/execution/AsyncVar.html">monix.execution.AsyncVar</a>,
-the <code class="language-plaintext highlighter-rouge">Future</code>-enabled alternative</li>
-  <li>we can use our <a href="/docs/current/execution/atomic.html">Atomic</a> implementations</li>
-  <li>at this point Monix’s <code class="language-plaintext highlighter-rouge">MVar</code> has some fixes that have to wait for
-the next version of Cats-Effect to be merged upstream</li>
+  <li><code class="language-plaintext highlighter-rouge">Future</code>に対応した代替品として、<a href="/api/current/monix/execution/AsyncVar.html">monix.execution.AsyncVar</a>と実装を共有している。</li>
+  <li>Monixの<a href="/docs/current/execution/atomic.html">Atomic</a>の実装を使うことができる。</li>
+  <li>現時点でMonixの<code class="language-plaintext highlighter-rouge">MVar</code>には、次のバージョンの<code class="language-plaintext highlighter-rouge">Cats-Effect</code>が上流にマージされるのを待つ必要がある。</li>
 </ol>
     
-      <h2 id="use-case-synchronized-mutable-variables">
+      <h2 id="ユースケース-同期した可変型変数">
         
         
-          Use-case: Synchronized Mutable Variables <a href="#use-case-synchronized-mutable-variables" class="anchor">#</a>
+          ユースケース: 同期した可変型変数 <a href="#ユースケース-同期した可変型変数" class="anchor">#</a>
         
         
       </h2>
@@ -258,33 +245,30 @@ the next version of Cats-Effect to be merged upstream</li>
     <span class="n">r</span> <span class="k">&lt;-</span> <span class="nf">sum</span><span class="o">(</span><span class="n">state</span><span class="o">,</span> <span class="o">(</span><span class="mi">0</span> <span class="n">until</span> <span class="mi">100</span><span class="o">).</span><span class="py">toList</span><span class="o">)</span>
   <span class="o">}</span> <span class="k">yield</span> <span class="n">r</span>
 
-<span class="c1">// Evaluate</span>
+<span class="c1">// 評価する</span>
 <span class="nv">task</span><span class="o">.</span><span class="py">runToFuture</span><span class="o">.</span><span class="py">foreach</span><span class="o">(</span><span class="n">println</span><span class="o">)</span>
 <span class="c1">//=&gt; 4950</span>
 </code></pre></div></div>
 
-<p>This sample isn’t very useful, except to show how <code class="language-plaintext highlighter-rouge">MVar</code> can be used
-as a variable. The <code class="language-plaintext highlighter-rouge">take</code> and <code class="language-plaintext highlighter-rouge">put</code> operations are atomic.
-The <code class="language-plaintext highlighter-rouge">take</code> call will (asynchronously) block if there isn’t a value
-available, whereas the call to <code class="language-plaintext highlighter-rouge">put</code> blocks if the <code class="language-plaintext highlighter-rouge">MVar</code> already
-has a value in it waiting to be consumed.</p>
+<p>このサンプルは<code class="language-plaintext highlighter-rouge">MVar</code>がどのように変数として使用できるかを示す以外、あまり役に立ちません。
+<code class="language-plaintext highlighter-rouge">take</code>と<code class="language-plaintext highlighter-rouge">put</code>の操作はアトミックです。
+利用可能な値がない場合、<code class="language-plaintext highlighter-rouge">take</code>の呼び出しは(非同期的に)ブロックします。
+一方、<code class="language-plaintext highlighter-rouge">put</code>の呼び出しは<code class="language-plaintext highlighter-rouge">MVar</code>にすでに値が入っていて，その値が返されるのを待っている場合にブロックします。</p>
 
-<p>Obviously after the call for <code class="language-plaintext highlighter-rouge">take</code> and before the call for <code class="language-plaintext highlighter-rouge">put</code> happens
-we could have concurrent logic that can update the same variable.
-While the two operations are atomic by themselves, a combination of them
-isn’t atomic (i.e. atomic operations don’t compose), therefore if we want
-this sample to be <em>safe</em>, then we need extra synchronization.</p>
+<p>明らかに、<code class="language-plaintext highlighter-rouge">take</code>の呼び出しの後<code class="language-plaintext highlighter-rouge">put</code>の呼び出しの前には、同じ変数を更新できる同時実行のロジックがあります。
+2つの操作は単独ではアトミックですが、組み合わせる操作はアトミックではありません(つまりアトミックな操作は合成されません)。
+このサンプルを<em>安全</em>にしたいのであれば、追加の同期が必要になります。</p>
     
-      <h2 id="use-case-asynchronous-lock-binary-semaphore-mutex">
+      <h2 id="ユースケース-非同期ロックバイナリセマフォミューテックス">
         
         
-          Use-case: Asynchronous Lock (Binary Semaphore, Mutex) <a href="#use-case-asynchronous-lock-binary-semaphore-mutex" class="anchor">#</a>
+          ユースケース: 非同期ロック(バイナリセマフォ、ミューテックス) <a href="#ユースケース-非同期ロックバイナリセマフォミューテックス" class="anchor">#</a>
         
         
       </h2>
 
-<p>The <code class="language-plaintext highlighter-rouge">take</code> operation can act as “acquire” and <code class="language-plaintext highlighter-rouge">put</code> can act as the “release”.
-Let’s do it:</p>
+<p><code class="language-plaintext highlighter-rouge">take</code>操作は「取得」、<code class="language-plaintext highlighter-rouge">put</code>操作は「解除」の役割を果たします。
+それではやってみましょう。</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">final</span> <span class="k">class</span> <span class="nc">MLock</span><span class="o">(</span><span class="n">mvar</span><span class="k">:</span> <span class="kt">MVar</span><span class="o">[</span><span class="kt">Task</span>, <span class="kt">Unit</span><span class="o">])</span> <span class="o">{</span>
   <span class="k">def</span> <span class="nf">acquire</span><span class="k">:</span> <span class="kt">Task</span><span class="o">[</span><span class="kt">Unit</span><span class="o">]</span> <span class="k">=</span>
@@ -302,13 +286,13 @@ Let’s do it:</p>
 <span class="o">}</span>
 
 <span class="k">object</span> <span class="nc">MLock</span> <span class="o">{</span>
-  <span class="cm">/** Builder. */</span>
+  <span class="cm">/** ビルダー */</span>
   <span class="k">def</span> <span class="nf">apply</span><span class="o">()</span><span class="k">:</span> <span class="kt">Task</span><span class="o">[</span><span class="kt">MLock</span><span class="o">]</span> <span class="k">=</span>
     <span class="nc">MVar</span><span class="o">[</span><span class="kt">Task</span><span class="o">].</span><span class="py">of</span><span class="o">(()).</span><span class="py">map</span><span class="o">(</span><span class="n">v</span> <span class="k">=&gt;</span> <span class="k">new</span> <span class="nc">MLock</span><span class="o">(</span><span class="n">v</span><span class="o">))</span>
 <span class="o">}</span>
 </code></pre></div></div>
 
-<p>And now we can apply synchronization to the previous example:</p>
+<p>そして今度は、先ほどの例に同期を適用してみましょう:</p>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">val</span> <span class="nv">task</span> <span class="k">=</span> 
   <span class="k">for</span> <span class="o">{</span>
@@ -318,45 +302,43 @@ Let’s do it:</p>
     <span class="n">r</span> <span class="k">&lt;-</span> <span class="nv">lock</span><span class="o">.</span><span class="py">greenLight</span><span class="o">(</span><span class="n">task</span><span class="o">)</span>
   <span class="o">}</span> <span class="k">yield</span> <span class="n">r</span>
 
-<span class="c1">// Evaluate</span>
+<span class="c1">// 評価する</span>
 <span class="nv">task</span><span class="o">.</span><span class="py">runToFuture</span><span class="o">.</span><span class="py">foreach</span><span class="o">(</span><span class="n">println</span><span class="o">)</span>
 <span class="c1">//=&gt; 4950</span>
 </code></pre></div></div>
     
-      <h2 id="use-case-producerconsumer-channel">
+      <h2 id="ユースケース-プロデューサーコンシューマーチャンネル">
         
         
-          Use-case: Producer/Consumer Channel <a href="#use-case-producerconsumer-channel" class="anchor">#</a>
+          ユースケース: プロデューサー/コンシューマーチャンネル <a href="#ユースケース-プロデューサーコンシューマーチャンネル" class="anchor">#</a>
         
         
       </h2>
 
-<p>An obvious use-case is to model a simple producer-consumer channel.</p>
+<p>明白な使用例は、単純なプロデューサーとコンシューマーのチャンネルをモデル化することです。</p>
 
-<p>Say that you have a producer that needs to push events.
-But we also need some back-pressure, so we need to wait on the
-consumer to consume the last event before being able to generate
-a new event.</p>
+<p>イベントをプッシュする必要のあるプロデューサーがいるとします。
+しかし、バックプレッシャーも必要なので、新しいイベントを生成する前にコンシューマが最後のイベントを消費するのを待つ必要があります。</p>
 
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Signaling option, because we need to detect completion</span>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// 完了を検知する必要があるためのシグナリングオプション</span>
 <span class="k">type</span> <span class="kt">Channel</span><span class="o">[</span><span class="kt">A</span><span class="o">]</span> <span class="k">=</span> <span class="nc">MVar</span><span class="o">[</span><span class="kt">Task</span>, <span class="kt">Option</span><span class="o">[</span><span class="kt">A</span><span class="o">]]</span>
 
 <span class="k">def</span> <span class="nf">producer</span><span class="o">(</span><span class="n">ch</span><span class="k">:</span> <span class="kt">Channel</span><span class="o">[</span><span class="kt">Int</span><span class="o">],</span> <span class="n">list</span><span class="k">:</span> <span class="kt">List</span><span class="o">[</span><span class="kt">Int</span><span class="o">])</span><span class="k">:</span> <span class="kt">Task</span><span class="o">[</span><span class="kt">Unit</span><span class="o">]</span> <span class="k">=</span>
   <span class="n">list</span> <span class="k">match</span> <span class="o">{</span>
     <span class="k">case</span> <span class="nc">Nil</span> <span class="k">=&gt;</span>
-      <span class="nv">ch</span><span class="o">.</span><span class="py">put</span><span class="o">(</span><span class="nc">None</span><span class="o">)</span> <span class="c1">// we are done!</span>
+      <span class="nv">ch</span><span class="o">.</span><span class="py">put</span><span class="o">(</span><span class="nc">None</span><span class="o">)</span> <span class="c1">// できた！</span>
     <span class="k">case</span> <span class="n">head</span> <span class="o">::</span> <span class="n">tail</span> <span class="k">=&gt;</span>
-      <span class="c1">// next please</span>
+      <span class="c1">// 次、お願いします</span>
       <span class="nv">ch</span><span class="o">.</span><span class="py">put</span><span class="o">(</span><span class="nc">Some</span><span class="o">(</span><span class="n">head</span><span class="o">)).</span><span class="py">flatMap</span><span class="o">(</span><span class="k">_</span> <span class="k">=&gt;</span> <span class="nf">producer</span><span class="o">(</span><span class="n">ch</span><span class="o">,</span> <span class="n">tail</span><span class="o">))</span>
   <span class="o">}</span>
 
 <span class="k">def</span> <span class="nf">consumer</span><span class="o">(</span><span class="n">ch</span><span class="k">:</span> <span class="kt">Channel</span><span class="o">[</span><span class="kt">Int</span><span class="o">],</span> <span class="n">sum</span><span class="k">:</span> <span class="kt">Long</span><span class="o">)</span><span class="k">:</span> <span class="kt">Task</span><span class="o">[</span><span class="kt">Long</span><span class="o">]</span> <span class="k">=</span>
   <span class="nv">ch</span><span class="o">.</span><span class="py">take</span><span class="o">.</span><span class="py">flatMap</span> <span class="o">{</span>
     <span class="k">case</span> <span class="nc">Some</span><span class="o">(</span><span class="n">x</span><span class="o">)</span> <span class="k">=&gt;</span>
-      <span class="c1">// next please</span>
+      <span class="c1">// 次、お願いします</span>
       <span class="nf">consumer</span><span class="o">(</span><span class="n">ch</span><span class="o">,</span> <span class="n">sum</span> <span class="o">+</span> <span class="n">x</span><span class="o">)</span>
     <span class="k">case</span> <span class="nc">None</span> <span class="k">=&gt;</span>
-      <span class="nv">Task</span><span class="o">.</span><span class="py">now</span><span class="o">(</span><span class="n">sum</span><span class="o">)</span> <span class="c1">// we are done!</span>
+      <span class="nv">Task</span><span class="o">.</span><span class="py">now</span><span class="o">(</span><span class="n">sum</span><span class="o">)</span> <span class="c1">// できた！</span>
   <span class="o">}</span>
 
 <span class="k">val</span> <span class="nv">count</span> <span class="k">=</span> <span class="mi">100000</span>
@@ -366,17 +348,17 @@ a new event.</p>
     <span class="n">channel</span> <span class="k">&lt;-</span> <span class="nc">MVar</span><span class="o">[</span><span class="kt">Task</span><span class="o">].</span><span class="py">empty</span><span class="o">[</span><span class="kt">Option</span><span class="o">[</span><span class="kt">Int</span><span class="o">]]()</span>
     <span class="n">producerTask</span> <span class="k">=</span> <span class="nf">producer</span><span class="o">(</span><span class="n">channel</span><span class="o">,</span> <span class="o">(</span><span class="mi">0</span> <span class="n">until</span> <span class="n">count</span><span class="o">).</span><span class="py">toList</span><span class="o">).</span><span class="py">executeAsync</span>
     <span class="n">consumerTask</span> <span class="k">=</span> <span class="nf">consumer</span><span class="o">(</span><span class="n">channel</span><span class="o">,</span> <span class="mi">0L</span><span class="o">).</span><span class="py">executeAsync</span>
-    <span class="c1">// Ensure they run in parallel, not really necessary, just for kicks</span>
+    <span class="c1">// 実際には必要ないが、念のために並列処理を確実に行う。</span>
     <span class="n">sum</span> <span class="k">&lt;-</span> <span class="nv">Task</span><span class="o">.</span><span class="py">parMap2</span><span class="o">(</span><span class="n">producerTask</span><span class="o">,</span> <span class="n">consumerTask</span><span class="o">)((</span><span class="k">_</span><span class="o">,</span><span class="n">sum</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="n">sum</span><span class="o">)</span>
   <span class="o">}</span> <span class="k">yield</span> <span class="n">sum</span>
 
-<span class="c1">// Evaluate</span>
+<span class="c1">// 評価する</span>
 <span class="nv">sumTask</span><span class="o">.</span><span class="py">runToFuture</span><span class="o">.</span><span class="py">foreach</span><span class="o">(</span><span class="n">println</span><span class="o">)</span>
 <span class="c1">//=&gt; 4999950000</span>
 </code></pre></div></div>
 
-<p>Running this will work as expected. Our <code class="language-plaintext highlighter-rouge">producer</code> pushes values
-into our <code class="language-plaintext highlighter-rouge">MVar</code> and our <code class="language-plaintext highlighter-rouge">consumer</code> will consume all of those values.</p>
+<p>これを実行すると期待通りに動作します。
+<code class="language-plaintext highlighter-rouge">producer</code>が値を<code class="language-plaintext highlighter-rouge">MVar</code>にプッシュし、<code class="language-plaintext highlighter-rouge">consumer </code>がそれらの値をすべて消費します。</p>
 
 
   <div class="buttons">
