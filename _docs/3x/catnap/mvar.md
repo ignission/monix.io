@@ -4,76 +4,63 @@ title: MVar
 type_api: monix.catnap.MVar
 type_source: monix-catnap/shared/src/main/scala/monix/catnap/MVar.scala
 description: |
-  A mutable location that can be empty or contains a value, asynchronously blocking reads when empty and blocking writes when full.
+  空または値を含めることができる可変の変数で、空のときは非同期に読み込みをブロックし、満杯のときは書き込みをブロックします。
 ---
 
-An `MVar` is a mutable location that can be empty or contains a value,
-asynchronously blocking reads when empty and blocking writes when full.
+`MVar`は、空または値を含めることができる可変の変数で、空のときは非同期に読み込みをブロックし、満杯のときは書き込みをブロックします。
 
-## Introduction
+## 概要
 
-Use-cases:
+ユースケース:
 
-1. As synchronized, thread-safe mutable variables
-2. As channels, with `take` and `put` acting as "receive" and "send"
-3. As a binary semaphore, with `take` and `put` acting as "acquire" and "release"
+1. 同期され、スレッドセーフな可変型変数として
+2. `take`と`put`が「受信」と「送信」の役割を持つチャンネルとして 
+3. `take`と`put`が「取得」と「解放」の役割を持つバイナリーセマフォとして
 
-It has these fundamental, atomic operations:
+これらの基本的でアトミックな操作を持っています:
 
-- `put` which fills the var if empty, or blocks (asynchronously) until the var is empty again
-- `tryPut` which fills the var if empty; returns `true` if successful
-- `take` which empties the var if full, returning the contained value, or blocks (asynchronously) otherwise until there is a value to pull
-- `tryTake` empties if full, returns `None` if empty.
-- `read` which reads the current value without touching it, assuming there is one, or otherwise it waits until a value is made available via put
-- `tryRead` returns `Some(a)` if full, without modifying the var, or else returns `None`
-- `isEmpty` returns `true` if currently empty
-    
+- `put`は空の場合に変数へ値を入れるか、変数が再び空になるまで(非同期に)ブロックする。
+- `tryPut`は空の場合に変数へ値を入れようとし、成功した場合は`true`を返す。
+- `take`は満杯になったときにvarを空にして含まれている値を返し、そうでなければ取り出す値があるまで(非同期に)ブロックする。
+- `tryTake`は満杯になったら空にし、`None`を返す。 
+- `read`は現在の値があると仮定して触れずに読み取るか、そうでなければ`put`で値が利用可能になるまで待つ。  
+- `tryRead`は満杯であれば`Some(a)`を変更せずに返し、そうでなければ `None` を返す。
+- `isEmpty`は現在空であれば`true`を返す。
+
 <p class="extra" markdown='1'>
-In this context "<i>asynchronous blocking</i>" means that we are not blocking
-any threads. Instead the implementation uses callbacks to notify clients
-when the operation has finished (notifications exposed by means of [Task](./task.md))
-and it thus works on top of Javascript as well.
+この文脈では、"<i>非同期ブロッキング</i>"とはスレッドをブロックしないことを意味します。
+その代わりに実装では、操作が終了したことをクライアントに通知するためにコールバックを使用しています(通知方法は[Task](./task.md)によって公開されています)。
+そのため、Javascriptの上でも動作します。
 </p>
 
-### Inspiration
+### インスピレーション
 
-This data type is inspired by `Control.Concurrent.MVar` from Haskell, introduced in the paper
-[Concurrent Haskell](http://research.microsoft.com/~simonpj/papers/concurrent-haskell.ps.gz),
-by Simon Peyton Jones, Andrew Gordon and Sigbjorn Finne, though some details of
-their implementation are changed (in particular, a put on a full `MVar` used
-to error, but now merely blocks).
+このデータタイプは、論文[Concurrent Haskell](http://research.microsoft.com/~simonpj/papers/concurrent-haskell.ps.gz)で紹介されています。
+Simon Peyton Jones、Andrew Gordon、Sigbjorn Finneによって実装の詳細は変更されています(特に完全な`MVar`への`put`は以前はエラーになっていましたが、現在は単にブロックするだけです)。
 
-Appropriate for building synchronization primitives and  performing simple
-interthread communication, it's the equivalent of a `BlockingQueue(capacity = 1)`,
-except that there's no actual thread blocking involved and it is powered by `Task`.
+同期プリミティブの構築や単純なスレッド間通信の実行に適しています。
+これは`BlockingQueue(capacity = 1)`と同等のものです。
+ただし、実際にはスレッドのブロッキングは行われず、`Task`を利用することになります。
 
 ## Cats-Effect
 
-`MVar` is generic, being built to abstract over the effect type via the
-[Cats-Effect](https://typelevel.org/cats-effect/) type classes, meaning
-you can use it with Monix's `Task` just as well as with 
-[cats.effect.IO](https://typelevel.org/cats-effect/datatypes/io.html)
-or any data types implementing `Async` or `Concurrent`.
+`MVar`は汎用的で、[Cats-Effect](https://typelevel.org/cats-effect/)の型クラスを介してエフェクトタイプを抽象化するように作られています。
+つまり、Monixの`Task`と同じように`MVar`を[cats.effect.IO](https://typelevel.org/cats-effect/datatypes/io.html)や、`Async`、`Concurrent`を実装したデータタイプと同様に使用できるということです。
 
-Note that `MVar` is already described in
-[cats.effect.concurrent.MVar](https://typelevel.org/cats-effect/concurrency/mvar.md)
-and Monix's implementation does in fact implement that interface.
+なお、`MVar`については[cats.effect.concurrent.MVar](https://typelevel.org/cats-effect/concurrency/mvar.md)ですでに説明されており、Monixは実際にそのインターフェイスを実装しています。
 
 <a href="https://typelevel.org/cats-effect/concurrency/mvar.md" target="_blank" 
   title="cats.effect.concurrent.MVar" alt="cats.effect.concurrent.MVar">
   <img src="{{ site.url }}/public/images/concurrency-mvar.png" width="400" />
 </a>
 
-`MVar` will remain in Monix as well because:
+次の理由から、`MVar`はMonixにも残ります:
 
-1. it shares implementation with
-   [monix.execution.AsyncVar]({{ page.path | api_base_url }}monix/execution/AsyncVar.html),
-   the `Future`-enabled alternative
-2. we can use our [Atomic](../execution/atomic.md) implementations
-3. at this point Monix's `MVar` has some fixes that have to wait for
-   the next version of Cats-Effect to be merged upstream
+1. `Future`に対応した代替品として、[monix.execution.AsyncVar]({{ page.path | api_base_url }}monix/execution/AsyncVar.html)と実装を共有している。
+2. Monixの[Atomic](../execution/atomic.md)の実装を使うことができる。
+3. 現時点でMonixの`MVar`には、次のバージョンの`Cats-Effect`が上流にマージされるのを待つ必要がある。
 
-## Use-case: Synchronized Mutable Variables
+## ユースケース: 同期した可変型変数
 
 ```scala mdoc:invisible:nest
 import monix.eval._
@@ -104,27 +91,24 @@ val task =
     r <- sum(state, (0 until 100).toList)
   } yield r
 
-// Evaluate
+// 評価する
 task.runToFuture.foreach(println)
 //=> 4950
 ```
 
-This sample isn't very useful, except to show how `MVar` can be used
-as a variable. The `take` and `put` operations are atomic.
-The `take` call will (asynchronously) block if there isn't a value
-available, whereas the call to `put` blocks if the `MVar` already
-has a value in it waiting to be consumed.
+このサンプルは`MVar`がどのように変数として使用できるかを示す以外、あまり役に立ちません。
+`take`と`put`の操作はアトミックです。
+利用可能な値がない場合、`take`の呼び出しは(非同期的に)ブロックします。
+一方、`put`の呼び出しは`MVar`にすでに値が入っていて，その値が返されるのを待っている場合にブロックします。
 
-Obviously after the call for `take` and before the call for `put` happens
-we could have concurrent logic that can update the same variable.
-While the two operations are atomic by themselves, a combination of them
-isn't atomic (i.e. atomic operations don't compose), therefore if we want
-this sample to be *safe*, then we need extra synchronization.
+明らかに、`take`の呼び出しの後`put`の呼び出しの前には、同じ変数を更新できる同時実行のロジックがあります。
+2つの操作は単独ではアトミックですが、組み合わせる操作はアトミックではありません(つまりアトミックな操作は合成されません)。
+このサンプルを*安全*にしたいのであれば、追加の同期が必要になります。
 
-## Use-case: Asynchronous Lock (Binary Semaphore, Mutex)
+## ユースケース: 非同期ロック(バイナリセマフォ、ミューテックス)
 
-The `take` operation can act as "acquire" and `put` can act as the "release".
-Let's do it:
+`take`操作は「取得」、`put`操作は「解除」の役割を果たします。
+それではやってみましょう。
 
 ```scala mdoc:silent:nest
 final class MLock(mvar: MVar[Task, Unit]) {
@@ -143,13 +127,13 @@ final class MLock(mvar: MVar[Task, Unit]) {
 }
 
 object MLock {
-  /** Builder. */
+  /** ビルダー */
   def apply(): Task[MLock] =
     MVar[Task].of(()).map(v => new MLock(v))
 }
 ```
 
-And now we can apply synchronization to the previous example:
+そして今度は、先ほどの例に同期を適用してみましょう:
 
 ```scala mdoc:silent:nest
 val task = 
@@ -160,40 +144,38 @@ val task =
     r <- lock.greenLight(task)
   } yield r
 
-// Evaluate
+// 評価する
 task.runToFuture.foreach(println)
 //=> 4950
 ```
 
-## Use-case: Producer/Consumer Channel
+## ユースケース: プロデューサー/コンシューマーチャンネル
 
-An obvious use-case is to model a simple producer-consumer channel.
+明白な使用例は、単純なプロデューサーとコンシューマーのチャンネルをモデル化することです。
 
-Say that you have a producer that needs to push events.
-But we also need some back-pressure, so we need to wait on the
-consumer to consume the last event before being able to generate
-a new event.
+イベントをプッシュする必要のあるプロデューサーがいるとします。
+しかし、バックプレッシャーも必要なので、新しいイベントを生成する前にコンシューマが最後のイベントを消費するのを待つ必要があります。
 
 ```scala mdoc:silent:nest
-// Signaling option, because we need to detect completion
+// 完了を検知する必要があるためのシグナリングオプション
 type Channel[A] = MVar[Task, Option[A]]
 
 def producer(ch: Channel[Int], list: List[Int]): Task[Unit] =
   list match {
     case Nil =>
-      ch.put(None) // we are done!
+      ch.put(None) // できた！
     case head :: tail =>
-      // next please
+      // 次、お願いします
       ch.put(Some(head)).flatMap(_ => producer(ch, tail))
   }
 
 def consumer(ch: Channel[Int], sum: Long): Task[Long] =
   ch.take.flatMap {
     case Some(x) =>
-      // next please
+      // 次、お願いします
       consumer(ch, sum + x)
     case None =>
-      Task.now(sum) // we are done!
+      Task.now(sum) // できた！
   }
 
 val count = 100000
@@ -203,14 +185,14 @@ val sumTask =
     channel <- MVar[Task].empty[Option[Int]]()
     producerTask = producer(channel, (0 until count).toList).executeAsync
     consumerTask = consumer(channel, 0L).executeAsync
-    // Ensure they run in parallel, not really necessary, just for kicks
+    // 実際には必要ないが、念のために並列処理を確実に行う。
     sum <- Task.parMap2(producerTask, consumerTask)((_,sum) => sum)
   } yield sum
 
-// Evaluate
+// 評価する
 sumTask.runToFuture.foreach(println)
 //=> 4999950000
 ```
 
-Running this will work as expected. Our `producer` pushes values
-into our `MVar` and our `consumer` will consume all of those values.
+これを実行すると期待通りに動作します。
+`producer`が値を`MVar`にプッシュし、`consumer `がそれらの値をすべて消費します。
